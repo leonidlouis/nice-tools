@@ -223,6 +223,8 @@ function canUseWebCodecs(
 ```typescript
 // src/lib/webcodecs-encoder.ts
 
+import { WebMMuxer } from 'mediabunny';
+
 export async function convertWithWebCodecs(
   input: VideoFile,
   settings: VideoConversionSettings
@@ -246,8 +248,16 @@ export async function convertWithWebCodecs(
   await encoder.flush();
   encoder.close();
   
-  // 4. Mux into WebM container
-  const webmBlob = muxToWebM(chunks, settings);
+  // 4. Mux into WebM container using mediabunny
+  const muxer = new WebMMuxer({
+    target: new Blob([], { type: 'video/webm' }),
+  });
+  
+  for (const chunk of chunks) {
+    muxer.addChunk(chunk);
+  }
+  
+  const webmBlob = muxer.finalize();
   
   return webmBlob;
 }
@@ -293,13 +303,15 @@ export function ProcessingModeBanner({
 
 WebCodecs requires external libraries for container formats:
 
-| Library | Purpose | NPM Package |
-|---------|---------|-------------|
-| webm-muxer | WebM container creation | `webm-muxer` |
-| jswebm | WebM demuxing/parsing | `jswebm` |
+| Library | Purpose | NPM Package | Status |
+|---------|---------|-------------|--------|
+| mediabunny | WebM container creation | `mediabunny` | ✅ **Recommended** (active) |
+| mp4box | MP4 demuxing/muxing | `mp4box` | ✅ Recommended |
+| webm-muxer | WebM container | `webm-muxer` | ⚠️ Deprecated (use mediabunny) |
+| jswebm | WebM parsing | `jswebm` | ⚠️ Abandoned (6 years old) |
 
 ```bash
-npm install webm-muxer
+npm install mediabunny mp4box
 ```
 
 ### File Structure Updates
@@ -309,14 +321,14 @@ src/
 ├── lib/
 │   ├── video-conversion.ts          # Main orchestration (updated)
 │   ├── webcodecs-encoder.ts         # NEW: WebCodecs implementation
-│   ├── webm-muxer.ts                # NEW: WebM container handling
-│   └── ffmpeg-encoder.ts           # NEW: Isolated ffmpeg logic
+│   ├── mediabunny-muxer.ts          # NEW: WebM container handling
+│   └── ffmpeg-encoder.ts            # NEW: Isolated ffmpeg logic
 ├── workers/
 │   ├── video-converter.worker.ts    # Updated: route to engines
-│   └── ffmpeg.worker.ts            # Existing (kept for fallback)
+│   └── ffmpeg.worker.ts             # Existing (kept for fallback)
 └── components/video/
     ├── video-settings-panel.tsx     # Updated: mode banner
-    └── video-converter-banner.tsx  # NEW: Capability banner
+    └── video-converter-banner.tsx   # NEW: Capability banner
 ```
 
 ### User Experience Flow
@@ -369,7 +381,8 @@ src/
 ### Phase 1: Core Infrastructure
 - [ ] Add capability detection utility
 - [ ] Create WebCodecs encoder module
-- [ ] Integrate webm-muxer for container handling
+- [ ] Integrate mediabunny for WebM container handling
+- [ ] Add mp4box for input demuxing (if needed)
 - [ ] Update video-conversion.ts routing logic
 
 ### Phase 2: User Experience
@@ -395,7 +408,7 @@ src/
 
 2. **Container Muxing**
    - WebCodecs doesn't include muxing
-   - Requires webm-muxer library for WebM output
+   - Requires mediabunny library for WebM output (webm-muxer is deprecated)
 
 3. **Codec Availability Varies**
    - Not all browsers support all codecs
@@ -404,6 +417,10 @@ src/
 4. **Key Frame Requirements**
    - Decoders need key frames to start
    - Must manage key frame insertion during encoding
+
+5. **Input Decoding**
+   - WebCodecs can decode, but needs help for various container formats
+   - May need mp4box or other demuxers for input parsing
 
 ### Fallback Limitations
 

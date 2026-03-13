@@ -1,4 +1,4 @@
-// Compression types for the PixelPinch app
+// Compression types for the tools.bylouis.io app
 
 export type OutputFormat = 'webp' | 'jpeg';
 

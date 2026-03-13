@@ -1,4 +1,4 @@
-name: Deploy PixelPinch to VPS
+name: Deploy tools.bylouis.io to VPS
 
 on:
   push:
@@ -9,7 +9,7 @@ env:
   REGISTRY: ghcr.io
   # Use the repository name as the image name (lowercase)
   IMAGE_NAME: ${{ github.repository }}
-  CONTAINER_NAME: pixelpinch-v1
+  CONTAINER_NAME: toolsbylouis-v1
   PORT: 3002
 
 jobs:
