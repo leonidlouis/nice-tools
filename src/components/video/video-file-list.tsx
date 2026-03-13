@@ -97,8 +97,9 @@ export function VideoFileList({
     }
 
     return (
-        <Card className="max-w-full overflow-hidden">
-            <style jsx global>{`
+        <>
+            <Card className="max-w-full overflow-hidden">
+                <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 10px;
                     display: block;
@@ -120,75 +121,176 @@ export function VideoFileList({
                     scrollbar-color: var(--border) transparent;
                 }
             `}</style>
-            <CardHeader className="pb-3">
+                <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                            <FileVideo className="w-4 h-4" />
+                            Files ({files.length})
+                        </CardTitle>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleClearAll}
+                            className="text-muted-foreground hover:text-destructive"
+                        >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            <span className="hidden sm:inline">Clear All</span>
+                            <span className="sm:hidden">Clear</span>
+                        </Button>
+                    </div>
+
+                    {/* Overall Progress */}
+                    <div className="space-y-2 pt-2">
+                        <div className="flex flex-wrap justify-between gap-y-1 text-sm">
+                            <span className="text-muted-foreground">
+                                {completedCount} of {files.length} complete
+                                {processingCount > 0 && ` • ${processingCount} processing`}
+                                {errorCount > 0 && ` • ${errorCount} failed`}
+                                {cancelledCount > 0 && ` • ${cancelledCount} cancelled`}
+                            </span>
+                            {totalSaved !== 0 && completedCount > 0 && (
+                                <span className={`font-medium ${totalSaved > 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600'}`}>
+                                    {totalSaved > 0 ? `-${totalSaved}%` : `+${Math.abs(totalSaved)}%`}
+                                </span>
+                            )}
+                        </div>
+                        <Progress value={overallProgress} className="h-2" />
+                    </div>
+
+                    {/* Summary Stats */}
+                    {completedCount > 0 && (
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm pt-2">
+                            <div>
+                                <span className="text-muted-foreground">Original: </span>
+                                <span className="font-medium">{formatBytes(totalOriginal)}</span>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground">Output: </span>
+                                <span className="font-medium">{formatBytes(totalOutput)}</span>
+                            </div>
+                        </div>
+                    )}
+                </CardHeader>
+
+                <CardContent className="pt-0">
+                    <div className="relative group/list">
+                        <div className="max-h-[400px] overflow-y-auto space-y-2 pr-1 custom-scrollbar overscroll-contain">
+                            {files.map((file) => (
+                                <VideoFileItem
+                                    key={file.id}
+                                    file={file}
+                                    onRemove={onRemoveFile}
+                                    onRetry={onRetryFile}
+                                    onPreview={onPreview}
+                                    onCancel={onCancelFile}
+                                    isProcessing={isProcessing}
+                                />
+                            ))}
+                        </div>
+                        {/* Scroll hint gradient */}
+                        <div className="absolute bottom-0 left-0 right-1 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none opacity-0 group-hover/list:opacity-100 transition-opacity" />
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Error Details Box - Shows only when there are errors */}
+            <ErrorDetailsBox files={files} />
+        </>
+    );
+}
+
+interface ErrorDetailsBoxProps {
+    files: VideoFile[];
+}
+
+function ErrorDetailsBox({ files }: ErrorDetailsBoxProps) {
+    const [isExpanded, setIsExpanded] = React.useState(false);
+
+    // Get files with errors
+    const errorFiles = files.filter(f => f.status === 'error' && f.error);
+
+    if (errorFiles.length === 0) {
+        return null;
+    }
+
+    // Build email body with error details
+    const buildEmailBody = () => {
+        const errorDetails = errorFiles.map(f =>
+            `File: ${f.name}\nError: ${f.error}`
+        ).join('\n\n---\n\n');
+
+        return encodeURIComponent(
+            `Hi,\n\nI encountered errors while converting videos:\n\n${errorDetails}\n\n` +
+            `Browser: ${navigator.userAgent}\n` +
+            `Timestamp: ${new Date().toISOString()}\n\n` +
+            `Please help me resolve this issue.`
+        );
+    };
+
+    return (
+        <Card className="mt-4 border-destructive/50 bg-destructive/5 gap-1">
+            <CardHeader className={isExpanded ? "pb-3" : "pb-0"}>
                 <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-                        <FileVideo className="w-4 h-4" />
-                        Files ({files.length})
+                    <CardTitle className="flex items-center gap-2 text-sm sm:text-base text-destructive">
+                        <AlertCircle className="w-4 h-4" />
+                        Conversion Errors ({errorFiles.length})
                     </CardTitle>
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleClearAll}
-                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="text-destructive hover:text-destructive/80"
                     >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        <span className="hidden sm:inline">Clear All</span>
-                        <span className="sm:hidden">Clear</span>
+                        {isExpanded ? 'Hide Details' : 'Show Details'}
                     </Button>
                 </div>
-
-                {/* Overall Progress */}
-                <div className="space-y-2 pt-2">
-                    <div className="flex flex-wrap justify-between gap-y-1 text-sm">
-                        <span className="text-muted-foreground">
-                            {completedCount} of {files.length} complete
-                            {processingCount > 0 && ` • ${processingCount} processing`}
-                            {errorCount > 0 && ` • ${errorCount} failed`}
-                            {cancelledCount > 0 && ` • ${cancelledCount} cancelled`}
-                        </span>
-                        {totalSaved !== 0 && completedCount > 0 && (
-                            <span className={`font-medium ${totalSaved > 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600'}`}>
-                                {totalSaved > 0 ? `-${totalSaved}%` : `+${Math.abs(totalSaved)}%`}
-                            </span>
-                        )}
-                    </div>
-                    <Progress value={overallProgress} className="h-2" />
-                </div>
-
-                {/* Summary Stats */}
-                {completedCount > 0 && (
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm pt-2">
-                        <div>
-                            <span className="text-muted-foreground">Original: </span>
-                            <span className="font-medium">{formatBytes(totalOriginal)}</span>
-                        </div>
-                        <div>
-                            <span className="text-muted-foreground">Output: </span>
-                            <span className="font-medium">{formatBytes(totalOutput)}</span>
-                        </div>
-                    </div>
-                )}
             </CardHeader>
 
-            <CardContent className="pt-0">
-                <div className="relative group/list">
-                    <div className="max-h-[400px] overflow-y-auto space-y-2 pr-1 custom-scrollbar overscroll-contain">
-                        {files.map((file) => (
-                            <VideoFileItem
+            <CardContent className={isExpanded ? "pt-0 space-y-3" : "py-0"}>
+                {isExpanded && (
+                    <>
+                        {errorFiles.map((file, index) => (
+                            <div
                                 key={file.id}
-                                file={file}
-                                onRemove={onRemoveFile}
-                                onRetry={onRetryFile}
-                                onPreview={onPreview}
-                                onCancel={onCancelFile}
-                                isProcessing={isProcessing}
-                            />
+                                className="p-3 rounded-lg bg-destructive/10 border border-destructive/20"
+                            >
+                                <p className="text-sm font-medium text-destructive mb-1">
+                                    {index + 1}. {file.name}
+                                </p>
+                                <pre className="text-xs text-destructive/80 whitespace-pre-wrap overflow-x-auto font-mono bg-black/5 p-2 rounded">
+                                    {file.error}
+                                </pre>
+                            </div>
                         ))}
-                    </div>
-                    {/* Scroll hint gradient */}
-                    <div className="absolute bottom-0 left-0 right-1 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none opacity-0 group-hover/list:opacity-100 transition-opacity" />
-                </div>
+                        <div className="pt-2">
+                            <p className="text-xs text-muted-foreground">
+                                Encountered errors while converting your video(s).{' '}
+                                <a
+                                    href={`mailto:hello@bylouis.io?subject=Video%20Conversion%20Error%20Report&body=${buildEmailBody()}`}
+                                    className="text-destructive hover:underline font-medium"
+                                    onClick={() => sendEvent('video_error_report_clicked', { error_count: errorFiles.length })}
+                                >
+                                    Click here to report this issue
+                                </a>{' '}
+                                and I'll help you resolve it.
+                            </p>
+                        </div>
+                    </>
+                )}
+
+                {!isExpanded && (
+                    <p className="text-xs text-muted-foreground py-3">
+                        Encountered errors while converting your video(s).{' '}
+                        <a
+                            href={`mailto:hello@bylouis.io?subject=Video%20Conversion%20Error%20Report&body=${buildEmailBody()}`}
+                            className="text-destructive hover:underline font-medium"
+                            onClick={() => sendEvent('video_error_report_clicked', { error_count: errorFiles.length })}
+                        >
+                            Click here to report this issue
+                        </a>{' '}
+                        and I'll help you resolve it.
+                    </p>
+                )}
             </CardContent>
         </Card>
     );

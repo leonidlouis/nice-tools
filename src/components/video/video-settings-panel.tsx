@@ -1,25 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-    Settings2, 
-    Info, 
-    ChevronDown, 
+import {
+    Settings2,
+    Info,
+    ChevronDown,
     ChevronUp,
     Cpu,
     AlertTriangle,
 } from 'lucide-react';
-import type { 
-    VideoConversionSettings, 
+import type {
+    VideoConversionSettings,
     VideoFormat,
     VideoResolution,
     VideoPreset,
-    VideoFps
+    VideoFps,
+    BrowserCapabilities
 } from '@/types/video-conversion';
-import { isMultiThreadingSupported } from '@/lib/video-conversion';
+import { isMultiThreadingSupported, detectCapabilities } from '@/lib/video-conversion';
 import { FORMAT_DISPLAY_NAMES } from '@/types/video-conversion';
 import { sendEvent } from '@/lib/analytics';
+import { ProcessingModeBanner } from './video-converter-banner';
 
 interface VideoSettingsPanelProps {
     settings: VideoConversionSettings;
@@ -32,7 +34,13 @@ const VIDEO_FORMATS: VideoFormat[] = ['webm', 'gif'];
 export function VideoSettingsPanel({ settings, onSettingsChange, disabled }: VideoSettingsPanelProps) {
     const [showQualityGuide, setShowQualityGuide] = useState(false);
     const [showPerformanceInfo, setShowPerformanceInfo] = useState(false);
+    const [capabilities, setCapabilities] = useState<BrowserCapabilities | null>(null);
     const canUseMultiThreading = isMultiThreadingSupported();
+
+    // Detect browser capabilities on mount
+    useEffect(() => {
+        detectCapabilities().then(setCapabilities);
+    }, []);
 
     const handleFormatChange = (format: VideoFormat) => {
         onSettingsChange({ ...settings, outputFormat: format });
@@ -93,7 +101,7 @@ export function VideoSettingsPanel({ settings, onSettingsChange, disabled }: Vid
                                 Browser-Based Processing
                             </p>
                             <p className="text-blue-700 dark:text-blue-500 mt-1">
-                                Videos are converted entirely in your browser. This may be slower than desktop video converters but keeps your files private.
+                                Videos are converted entirely in your browser. This is expected to be <b>slower compared to desktop-based apps.</b>
                             </p>
                             <button
                                 type="button"
@@ -105,24 +113,26 @@ export function VideoSettingsPanel({ settings, onSettingsChange, disabled }: Vid
                             </button>
                         </div>
                     </div>
-                    
+
                     {showPerformanceInfo && (
                         <div className="mt-2 pt-2 border-t border-blue-500/20 space-y-2">
                             <p>
-                                <strong>Why is it slow?</strong> Browser-based video conversion uses WebAssembly, which runs at about 30% of native speed and is limited to a single CPU core by default.
+                                <strong>Why?</strong>
+                                <br />
+                                Browser-based conversion uses software
+                                encoding by default - software encoding is <i>slow</i>
+                                <br /><br />
+                                Modern browsers with hardware acceleration (Chrome 94+,
+                                Firefox 130+, Safari 16.4+) <i>could</i> be fast*.
+                                <br /><br />
+                                *: still slower than desktop apps.
                             </p>
-                            <p>
-                                <strong>Tips for faster conversion:</strong>
-                            </p>
-                            <ul className="list-disc list-inside space-y-1 ml-2">
-                                <li>Use &quot;Ultra Fast&quot; preset (lower quality but much faster)</li>
-                                <li>Reduce resolution (e.g., 720p instead of 1080p)</li>
-                                <li>Enable multi-threading below (if available)</li>
-                                <li>Shorter videos convert faster</li>
-                            </ul>
                         </div>
                     )}
                 </div>
+
+                {/* Legacy Mode Banner - only shown when using ffmpeg.wasm fallback */}
+                <ProcessingModeBanner capabilities={capabilities} />
 
                 {/* Mode Selection */}
                 {/* Output Format */}
@@ -180,8 +190,8 @@ export function VideoSettingsPanel({ settings, onSettingsChange, disabled }: Vid
                         </button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        {canUseMultiThreading 
-                            ? settings.multiThreaded 
+                        {canUseMultiThreading
+                            ? settings.multiThreaded
                                 ? 'Enabled: Uses multiple CPU cores for faster conversion (2-5x faster)'
                                 : 'Disabled: Single-core processing (slower but more compatible)'
                             : 'Not available on this device/browser. Requires SharedArrayBuffer support.'
@@ -196,7 +206,7 @@ export function VideoSettingsPanel({ settings, onSettingsChange, disabled }: Vid
                                     Experimental Feature
                                 </p>
                                 <p className="text-amber-700 dark:text-amber-500 mt-1">
-                                    Multi-threading can improve conversion speed but may cause stability issues. 
+                                    Multi-threading can improve conversion speed but may cause stability issues.
                                     If you experience crashes or errors, disable this option.
                                 </p>
                             </div>
