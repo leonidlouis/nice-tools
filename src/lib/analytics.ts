@@ -21,7 +21,8 @@ type EventName =
     | 'video_error_occurred'
     | 'video_preview_opened'
     | 'video_download_all'
-    | 'video_settings_changed';
+    | 'video_settings_changed'
+    | 'video_error_report_clicked';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EventProperties = { active_user_account?: string | null; } & Record<string, any>;

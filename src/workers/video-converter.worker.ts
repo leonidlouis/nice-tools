@@ -7,8 +7,11 @@ import type {
   VideoWorkerMessage,
   VideoWorkerResponse,
   ConversionPhase,
+  BrowserCapabilities,
 } from '../types/video-conversion';
 import { QUALITY_CRF, RESOLUTION_DIMENSIONS } from '../types/video-conversion';
+import { convertWithWebCodecs } from '../lib/webcodecs-encoder';
+import { detectCapabilities, canUseWebCodecs } from '../lib/video-conversion';
 
 // Worker state
 interface WorkerState {
@@ -243,8 +246,132 @@ function buildFFmpegArgs(
   return args;
 }
 
-// Main conversion function
-async function convertVideo(
+// Cache for browser capabilities (detected once per worker session)
+let workerCapabilities: BrowserCapabilities | null = null;
+
+/**
+ * Detects browser capabilities in the worker context.
+ */
+async function detectWorkerCapabilities(): Promise<BrowserCapabilities> {
+  if (workerCapabilities) {
+    return workerCapabilities;
+  }
+
+  const capabilities: BrowserCapabilities = {
+    webCodecsSupported: false,
+    supportedVideoEncoders: [],
+    supportedVideoDecoders: [],
+    webCodecsVP9Supported: false,
+    webCodecsAV1Supported: false,
+    webCodecsH264Supported: false,
+    webCodecsVP8Supported: false,
+  };
+
+  // Check basic WebCodecs support
+  if (!('VideoEncoder' in self) || !('VideoDecoder' in self)) {
+    workerCapabilities = capabilities;
+    return capabilities;
+  }
+
+  capabilities.webCodecsSupported = true;
+
+  // Check VP8 support
+  try {
+    const vp8Support = await VideoEncoder.isConfigSupported({
+      codec: 'vp8',
+      width: 1920,
+      height: 1080,
+      bitrate: 2_000_000,
+      framerate: 30,
+    });
+    const isSupported = vp8Support.supported ?? false;
+    capabilities.webCodecsVP8Supported = isSupported;
+    capabilities.supportedVideoEncoders.push({ codec: 'vp8', supported: isSupported });
+  } catch {
+    capabilities.supportedVideoEncoders.push({ codec: 'vp8', supported: false });
+  }
+
+  // Check VP9 support
+  try {
+    const vp9Support = await VideoEncoder.isConfigSupported({
+      codec: 'vp09.00.10.08',
+      width: 1920,
+      height: 1080,
+      bitrate: 2_000_000,
+      framerate: 30,
+    });
+    const isSupported = vp9Support.supported ?? false;
+    capabilities.webCodecsVP9Supported = isSupported;
+    capabilities.supportedVideoEncoders.push({ codec: 'vp9', supported: isSupported });
+  } catch {
+    capabilities.supportedVideoEncoders.push({ codec: 'vp9', supported: false });
+  }
+
+  // Check AV1 support
+  try {
+    const av1Support = await VideoEncoder.isConfigSupported({
+      codec: 'av01.0.00M.08',
+      width: 1920,
+      height: 1080,
+      bitrate: 2_000_000,
+      framerate: 30,
+    });
+    const isSupported = av1Support.supported ?? false;
+    capabilities.webCodecsAV1Supported = isSupported;
+    capabilities.supportedVideoEncoders.push({ codec: 'av1', supported: isSupported });
+  } catch {
+    capabilities.supportedVideoEncoders.push({ codec: 'av1', supported: false });
+  }
+
+  // Check H.264 support
+  try {
+    const h264Support = await VideoEncoder.isConfigSupported({
+      codec: 'avc1.42001e',
+      width: 1920,
+      height: 1080,
+      bitrate: 2_000_000,
+      framerate: 30,
+    });
+    const isSupported = h264Support.supported ?? false;
+    capabilities.webCodecsH264Supported = isSupported;
+    capabilities.supportedVideoEncoders.push({ codec: 'h264', supported: isSupported });
+  } catch {
+    capabilities.supportedVideoEncoders.push({ codec: 'h264', supported: false });
+  }
+
+  workerCapabilities = capabilities;
+  console.log('[Worker] Browser capabilities detected:', capabilities);
+  return capabilities;
+}
+
+/**
+ * Determines if WebCodecs can be used for the given conversion settings.
+ */
+function canUseWebCodecsInWorker(
+  settings: VideoConversionSettings,
+  capabilities: BrowserCapabilities
+): boolean {
+  // Must have WebCodecs support
+  if (!capabilities.webCodecsSupported) {
+    return false;
+  }
+
+  // GIF requires ffmpeg.wasm
+  if (settings.outputFormat === 'gif') {
+    return false;
+  }
+
+  // WebM (VP8/VP9) - WebCodecs can handle this if VP8 or VP9 is supported
+  if (settings.outputFormat === 'webm') {
+    return capabilities.webCodecsVP9Supported || capabilities.webCodecsVP8Supported;
+  }
+
+  // Default to ffmpeg.wasm for unsupported formats
+  return false;
+}
+
+// FFmpeg conversion function
+async function convertWithFFmpeg(
   id: string,
   videoData: ArrayBuffer,
   fileName: string,
@@ -427,6 +554,143 @@ async function convertVideo(
       // Ignore cleanup errors
     }
 
+    state.currentJob = null;
+  }
+}
+
+// Main conversion function with routing
+async function convertVideo(
+  id: string,
+  videoData: ArrayBuffer,
+  fileName: string,
+  settings: VideoConversionSettings,
+  signal: AbortSignal
+): Promise<void> {
+  // Detect capabilities to determine which engine to use
+  const capabilities = await detectWorkerCapabilities();
+  const useWebCodecs = canUseWebCodecsInWorker(settings, capabilities);
+
+  if (useWebCodecs) {
+    console.log('[Worker] Using WebCodecs for conversion');
+    await convertWithWebCodecsInWorker(id, videoData, fileName, settings, capabilities, signal);
+  } else {
+    // Log why WebCodecs isn't being used
+    if (!capabilities.webCodecsSupported) {
+      console.log('[Worker] WebCodecs not supported in this browser, using FFmpeg.wasm (legacy mode)');
+    } else if (settings.outputFormat === 'gif') {
+      console.log('[Worker] GIF output requires FFmpeg.wasm (WebCodecs does not support GIF)');
+    } else if (!capabilities.webCodecsVP9Supported && !capabilities.webCodecsVP8Supported) {
+      console.log('[Worker] VP8/VP9 encoding not supported, using FFmpeg.wasm (legacy mode)');
+    } else {
+      console.log('[Worker] Using FFmpeg.wasm (legacy mode) for conversion');
+    }
+    await convertWithFFmpeg(id, videoData, fileName, settings, signal);
+  }
+}
+
+/**
+ * Converts video using WebCodecs API within the worker.
+ */
+async function convertWithWebCodecsInWorker(
+  id: string,
+  videoData: ArrayBuffer,
+  fileName: string,
+  settings: VideoConversionSettings,
+  capabilities: BrowserCapabilities,
+  signal: AbortSignal
+): Promise<void> {
+  let aborted = false;
+  const abortHandler = () => {
+    aborted = true;
+  };
+  signal.addEventListener('abort', abortHandler);
+
+  try {
+    // Determine which codec to use
+    const codec = capabilities.webCodecsVP9Supported ? 'vp9' : 'vp8';
+    
+    // Create File from ArrayBuffer
+    const inputFile = new File([videoData], fileName, { type: 'video/webm' });
+
+    // Send progress update
+    sendProgress(id, 10, 'reading');
+
+    // Import the WebCodecs encoder dynamically
+    const { convertWithWebCodecs } = await import('../lib/webcodecs-encoder');
+
+    if (aborted) {
+      throw new Error('Conversion cancelled');
+    }
+
+    // Perform conversion with progress tracking
+    sendProgress(id, 20, 'converting');
+    
+    const outputBlob = await convertWithWebCodecs(
+      inputFile,
+      settings,
+      codec,
+      (progress) => {
+        // Map progress (20-95%) to our progress range
+        const mappedProgress = 20 + Math.round((progress / 100) * 75);
+        sendProgress(id, mappedProgress, 'converting');
+      }
+    );
+
+    if (aborted) {
+      throw new Error('Conversion cancelled');
+    }
+
+    // Convert blob to ArrayBuffer
+    sendProgress(id, 95, 'writing');
+    const buffer = await outputBlob.arrayBuffer();
+
+    // Complete
+    sendProgress(id, 100, 'complete');
+
+    // Send result
+    const response: VideoWorkerResponse = {
+      type: 'result',
+      payload: {
+        id,
+        status: 'success',
+        outputData: buffer,
+        outputSize: buffer.byteLength,
+      },
+    };
+    self.postMessage(response, { transfer: [buffer] });
+
+  } catch (error) {
+    if (aborted || (error instanceof Error && error.message.includes('cancelled'))) {
+      const response: VideoWorkerResponse = {
+        type: 'result',
+        payload: {
+          id,
+          status: 'cancelled',
+        },
+      };
+      self.postMessage(response);
+    } else {
+      const errorMessage = error instanceof Error ? error.message : 'WebCodecs conversion error';
+      
+      // If WebCodecs fails, fall back to FFmpeg
+      console.warn('[Worker] WebCodecs conversion failed, falling back to FFmpeg:', errorMessage);
+      
+      try {
+        await convertWithFFmpeg(id, videoData, fileName, settings, signal);
+      } catch (fallbackError) {
+        const response: VideoWorkerResponse = {
+          type: 'result',
+          payload: {
+            id,
+            status: 'error',
+            error: errorMessage,
+          },
+        };
+        self.postMessage(response);
+      }
+    }
+  } finally {
+    signal.removeEventListener('abort', abortHandler);
     state.currentJob = null;
   }
 }
