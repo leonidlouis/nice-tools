@@ -289,7 +289,7 @@ export default function VideoConverterPage() {
                             <div className="flex-1">
                                 <h3 className="text-sm font-medium text-amber-800 dark:text-amber-400">Mobile Device Detected</h3>
                                 <p className="text-sm text-amber-700 dark:text-amber-500 mt-1">
-                                    Video conversion is resource-intensive and may be slow on mobile devices. 
+                                    Video conversion is resource-intensive and may be slow on mobile devices.
                                     For the best experience, please use a desktop computer.
                                 </p>
                                 <Button
@@ -319,7 +319,7 @@ export default function VideoConverterPage() {
                                     <li><strong>Browser-based:</strong> Your files stay private, but conversion is slower than desktop apps</li>
                                 </ul>
                                 <p className="text-amber-700 dark:text-amber-500 pt-0.5">
-                                    Spotted a bug? <a href="https://github.com/anomalyco/opencode/issues" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900 dark:hover:text-amber-300 font-medium">Report it here</a>
+                                    Spotted a bug? <a href="mailto:louisleonid325@gmail.com" className="underline hover:text-amber-900 dark:hover:text-amber-300 font-medium">Email me here</a>
                                 </p>
                             </div>
                         </div>

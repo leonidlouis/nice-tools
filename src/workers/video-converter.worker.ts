@@ -108,6 +108,9 @@ async function initFFmpeg(multiThreaded: boolean): Promise<FFmpeg> {
     if (state.recentLogs.length > 50) {
       state.recentLogs.shift();
     }
+    // Update heartbeat on log activity — proves FFmpeg is still alive
+    // even when the progress event hasn't fired recently
+    state.lastProgressTime = Date.now();
     const response: VideoWorkerResponse = { type: 'log', payload: message };
     self.postMessage(response);
   });
@@ -315,7 +318,7 @@ async function convertVideo(
 
     // Timeout promise
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Conversion timeout - process may be stuck')), 300000); // 5 minute timeout
+      setTimeout(() => reject(new Error('Conversion timeout - process may be stuck')), 1800000); // 30 minute timeout
     });
 
     // Heartbeat monitoring to detect stuck conversions (no progress for 30 seconds)
@@ -327,7 +330,7 @@ async function convertVideo(
           return;
         }
         const timeSinceLastProgress = Date.now() - state.lastProgressTime;
-        if (timeSinceLastProgress > 30000) { // 30 seconds
+        if (timeSinceLastProgress > 60000) { // 60 seconds
           clearInterval(checkInterval);
           reject(new Error(`Conversion stuck - no progress for ${Math.round(timeSinceLastProgress / 1000)} seconds`));
         }
