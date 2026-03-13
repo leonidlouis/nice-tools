@@ -7,13 +7,18 @@
     "dev:all": "concurrently -n next,worker -c blue,green \"npm run dev\" \"npm run dev:worker\"",
     "build": "next build",
     "build:worker": "node scripts/build-worker.mjs",
-    "prebuild": "npm run copy-wasm && npm run build:worker",
+    "prebuild": "npm run copy-wasm && npm run copy-ffmpeg && npm run build:worker",
     "start": "next start",
     "lint": "eslint",
     "copy-wasm": "mkdir -p public/wasm && find node_modules/@jsquash -name '*.wasm' -exec cp {} public/wasm/ \\;",
-    "postinstall": "npm run copy-wasm && npm run build:worker"
+    "copy-ffmpeg": "mkdir -p public/ffmpeg public/workers && cp node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.js public/ffmpeg/ffmpeg-core.js && cp node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm public/ffmpeg/ffmpeg-core.wasm && cp node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js public/ffmpeg/worker.js && cp node_modules/@ffmpeg/ffmpeg/dist/esm/const.js public/ffmpeg/const.js && cp node_modules/@ffmpeg/ffmpeg/dist/esm/errors.js public/ffmpeg/errors.js && cp node_modules/@ffmpeg/ffmpeg/dist/esm/*.js public/workers/ && cp node_modules/@ffmpeg/core-mt/dist/esm/ffmpeg-core.js public/ffmpeg/ffmpeg-core.mt.js && cp node_modules/@ffmpeg/core-mt/dist/esm/ffmpeg-core.wasm public/ffmpeg/ffmpeg-core.mt.wasm && cp node_modules/@ffmpeg/core-mt/dist/esm/ffmpeg-core.worker.js public/ffmpeg/ffmpeg-worker.mt.js",
+    "postinstall": "npm run copy-wasm && npm run copy-ffmpeg && npm run build:worker"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/core-mt": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@jsquash/jpeg": "^1.6.0",
     "@jsquash/png": "^3.1.1",
     "@jsquash/resize": "^2.1.0",
