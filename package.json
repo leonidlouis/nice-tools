@@ -26,8 +26,10 @@
     "heic2any": "^0.0.4",
     "jszip": "^3.10.1",
     "lucide-react": "^0.562.0",
+    "motion": "^12.36.0",
     "next": "16.1.1",
     "posthog-js": "^1.312.0",
+    "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.4.0"
