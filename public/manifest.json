@@ -1,7 +1,7 @@
 {
-    "name": "PixelPinch - Batch Image Compression",
-    "short_name": "PixelPinch",
-    "description": "Compress images privately in your browser",
+    "name": "Tools | bylouis.io",
+    "short_name": "Tools | bylouis.io",
+    "description": "A curated set of tools, carefully made to be actually pleasant to use.",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0a0a0a",
