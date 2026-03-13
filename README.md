@@ -51,8 +51,8 @@ Batch compress images entirely in your browser using WebAssembly.
 ### Development
 
 ```bash
-git clone https://github.com/leonidlouis/pixelpinch.git
-cd pixelpinch
+git clone https://github.com/leonidlouis/nice-tools.git
+cd nice-tools
 
 npm install    # also copies WASM files and builds the worker
 
