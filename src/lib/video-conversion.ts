@@ -8,6 +8,9 @@ import type {
   VideoWorkerResponse,
   VideoConversionProgress,
   VideoConversionResult,
+  BrowserCapabilities,
+  VideoCodecSupport,
+  ProcessingEngine,
 } from '@/types/video-conversion';
 import {
   SUPPORTED_VIDEO_TYPES,
@@ -462,4 +465,181 @@ export function isMultiThreadingSupported(): boolean {
   }
   
   return false;
+}
+
+// Browser capability cache to avoid repeated detection
+let cachedCapabilities: BrowserCapabilities | null = null;
+
+/**
+ * Detects browser capabilities for WebCodecs API support.
+ * Caches result to avoid repeated checks.
+ */
+export async function detectCapabilities(): Promise<BrowserCapabilities> {
+  if (cachedCapabilities) {
+    return cachedCapabilities;
+  }
+
+  const capabilities: BrowserCapabilities = {
+    webCodecsSupported: false,
+    supportedVideoEncoders: [],
+    supportedVideoDecoders: [],
+    webCodecsVP9Supported: false,
+    webCodecsAV1Supported: false,
+    webCodecsH264Supported: false,
+    webCodecsVP8Supported: false,
+  };
+
+  // Check basic WebCodecs support
+  if (!('VideoEncoder' in window) || !('VideoDecoder' in window)) {
+    cachedCapabilities = capabilities;
+    return capabilities;
+  }
+
+  capabilities.webCodecsSupported = true;
+
+  // Check VP8 support (codec string: vp8)
+  try {
+    const vp8Support = await VideoEncoder.isConfigSupported({
+      codec: 'vp8',
+      width: 1920,
+      height: 1080,
+      bitrate: 2_000_000,
+      framerate: 30,
+    });
+    const isSupported = vp8Support.supported ?? false;
+    capabilities.webCodecsVP8Supported = isSupported;
+    capabilities.supportedVideoEncoders.push({
+      codec: 'vp8',
+      supported: isSupported,
+    });
+  } catch {
+    capabilities.supportedVideoEncoders.push({
+      codec: 'vp8',
+      supported: false,
+    });
+  }
+
+  // Check VP9 support (profile 0, level 1.0, bit depth 8)
+  try {
+    const vp9Support = await VideoEncoder.isConfigSupported({
+      codec: 'vp09.00.10.08',
+      width: 1920,
+      height: 1080,
+      bitrate: 2_000_000,
+      framerate: 30,
+    });
+    const isSupported = vp9Support.supported ?? false;
+    capabilities.webCodecsVP9Supported = isSupported;
+    capabilities.supportedVideoEncoders.push({
+      codec: 'vp9',
+      supported: isSupported,
+    });
+  } catch {
+    capabilities.supportedVideoEncoders.push({
+      codec: 'vp9',
+      supported: false,
+    });
+  }
+
+  // Check AV1 support (profile 0, level 2.0, tier main)
+  try {
+    const av1Support = await VideoEncoder.isConfigSupported({
+      codec: 'av01.0.00M.08',
+      width: 1920,
+      height: 1080,
+      bitrate: 2_000_000,
+      framerate: 30,
+    });
+    const isSupported = av1Support.supported ?? false;
+    capabilities.webCodecsAV1Supported = isSupported;
+    capabilities.supportedVideoEncoders.push({
+      codec: 'av1',
+      supported: isSupported,
+    });
+  } catch {
+    capabilities.supportedVideoEncoders.push({
+      codec: 'av1',
+      supported: false,
+    });
+  }
+
+  // Check H.264 support (baseline profile, level 3.0)
+  try {
+    const h264Support = await VideoEncoder.isConfigSupported({
+      codec: 'avc1.42001e',
+      width: 1920,
+      height: 1080,
+      bitrate: 2_000_000,
+      framerate: 30,
+    });
+    const isSupported = h264Support.supported ?? false;
+    capabilities.webCodecsH264Supported = isSupported;
+    capabilities.supportedVideoEncoders.push({
+      codec: 'h264',
+      supported: isSupported,
+    });
+  } catch {
+    capabilities.supportedVideoEncoders.push({
+      codec: 'h264',
+      supported: false,
+    });
+  }
+
+  cachedCapabilities = capabilities;
+  console.log('[VideoConversion] Browser capabilities detected:', capabilities);
+  return capabilities;
+}
+
+/**
+ * Clears the cached capabilities. Useful for testing.
+ */
+export function clearCapabilitiesCache(): void {
+  cachedCapabilities = null;
+}
+
+/**
+ * Determines if WebCodecs can be used for the given conversion settings.
+ */
+export function canUseWebCodecs(
+  settings: VideoConversionSettings,
+  capabilities: BrowserCapabilities
+): boolean {
+  // Must have WebCodecs support
+  if (!capabilities.webCodecsSupported) {
+    return false;
+  }
+
+  // GIF requires ffmpeg.wasm
+  if (settings.outputFormat === 'gif') {
+    return false;
+  }
+
+  // WebM (VP8/VP9) - WebCodecs can handle this if VP8 or VP9 is supported
+  if (settings.outputFormat === 'webm') {
+    return capabilities.webCodecsVP9Supported || capabilities.webCodecsVP8Supported;
+  }
+
+  // Default to ffmpeg.wasm for unsupported formats
+  return false;
+}
+
+/**
+ * Determines which processing engine should be used.
+ * Returns the engine type and additional metadata.
+ */
+export function determineProcessingEngine(
+  settings: VideoConversionSettings,
+  capabilities: BrowserCapabilities
+): { engine: ProcessingEngine; codec: 'vp8' | 'vp9' | null } {
+  if (canUseWebCodecs(settings, capabilities)) {
+    // Prefer VP9 for better quality, fall back to VP8
+    if (capabilities.webCodecsVP9Supported) {
+      return { engine: 'webcodecs', codec: 'vp9' };
+    }
+    if (capabilities.webCodecsVP8Supported) {
+      return { engine: 'webcodecs', codec: 'vp8' };
+    }
+  }
+  
+  return { engine: 'ffmpeg', codec: null };
 }

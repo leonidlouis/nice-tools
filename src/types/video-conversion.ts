@@ -7,6 +7,8 @@ export type VideoResolution = 'original' | '4k' | '1080p' | '720p' | '480p';
 export type VideoPreset = 'ultrafast' | 'fast' | 'medium' | 'slow';
 export type VideoFps = 'original' | '60' | '30' | '24' | '15';
 export type ConversionPhase = 'reading' | 'converting' | 'writing' | 'complete';
+export type VideoCodec = 'vp8' | 'vp9' | 'av1' | 'h264';
+export type ProcessingEngine = 'webcodecs' | 'ffmpeg';
 
 export interface VideoConversionSettings {
   mode: ConversionMode;
@@ -104,8 +106,8 @@ export const SUPPORTED_VIDEO_EXTENSIONS = [
 
 // Format display names
 export const FORMAT_DISPLAY_NAMES: Record<string, string> = {
-  webm: 'WebM (VP8)',
-  gif: 'GIF Animation',
+  webm: 'WebM',
+  gif: 'GIF Animation - this is slow and the filesize result will be 100x larger than the original video; gif is an ancient inefficient format, will add options here to downscale the video first before converting to .gif',
 };
 
 // Quality settings (CRF values for libx264)
@@ -135,3 +137,27 @@ export const PHASE_DISPLAY_NAMES: Record<ConversionPhase, string> = {
   writing: 'Writing output...',
   complete: 'Complete',
 };
+
+// Browser capability detection for WebCodecs
+export interface VideoCodecSupport {
+  codec: VideoCodec;
+  supported: boolean;
+  acceleration?: 'hardware' | 'software';
+}
+
+export interface BrowserCapabilities {
+  webCodecsSupported: boolean;
+  supportedVideoEncoders: VideoCodecSupport[];
+  supportedVideoDecoders: VideoCodecSupport[];
+  webCodecsVP9Supported: boolean;
+  webCodecsAV1Supported: boolean;
+  webCodecsH264Supported: boolean;
+  webCodecsVP8Supported: boolean;
+}
+
+// Processing mode for UI display
+export interface ProcessingModeInfo {
+  engine: ProcessingEngine;
+  isHardwareAccelerated: boolean;
+  codec?: VideoCodec;
+}
