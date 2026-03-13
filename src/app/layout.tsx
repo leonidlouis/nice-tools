@@ -16,41 +16,33 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PixelPinch - Free Batch Image Compression",
-  description: "Instantly compress all your images at once, entirely in your browser. No uploads, no limits, private. Supports WebP, JPEG, PNG, and HEIC.",
-  keywords: ["image compression", "batch compress", "webp", "jpeg", "png", "heic", "browser", "privacy", "free", "online", "fast", "instant"],
+  title: {
+    default: 'Tools | bylouis.io',
+    template: '%s | Tools | bylouis.io',
+  },
+  description: 'A collection of free, personally curated pleasant-to-use tools bylouis.io.',
+  keywords: ['tools', 'browser tools', 'privacy', 'free', 'image compression', 'bylouis'],
 
-  // Canonical URL
-  metadataBase: new URL('https://pixelpinch.app'),
+  metadataBase: new URL('https://tools.bylouis.io'),
   alternates: {
     canonical: '/',
   },
 
-  // Open Graph
   openGraph: {
-    title: 'PixelPinch - Free Batch Image Compression',
-    description: 'Instantly compress all your images in your browser. No uploads, no limits, private.',
-    url: 'https://pixelpinch.app',
-    siteName: 'PixelPinch',
+    title: 'Tools | bylouis.io',
+    description: 'Free, personally curated pleasant-to-use tools. No sign-ups, no uploads.',
+    url: 'https://tools.bylouis.io',
+    siteName: 'Tools | bylouis.io',
     locale: 'en_US',
     type: 'website',
-    images: [{
-      url: '/og-image.png',
-      width: 1200,
-      height: 630,
-      alt: 'PixelPinch - Batch Image Compression'
-    }],
   },
 
-  // Twitter Card
   twitter: {
     card: 'summary_large_image',
-    title: 'PixelPinch - Free Batch Image Compression',
-    description: 'Instantly compress all your images in your browser. No limits, private.',
-    images: ['/og-image.png'],
+    title: 'Tools | bylouis.io',
+    description: 'Free, personally curated pleasant-to-use tools. No sign-ups, no uploads.',
   },
 
-  // Robots
   robots: {
     index: true,
     follow: true,
@@ -60,14 +52,12 @@ export const metadata: Metadata = {
     },
   },
 
-  // Icons & Manifest
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',
 
-  // Other
   authors: [{ name: 'Louis', url: 'https://bylouis.io' }],
   creator: 'Louis',
   publisher: 'Louis',
