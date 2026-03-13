@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ImageDown, CoffeeIcon, Heart, ChevronUp } from "lucide-react";
+import { ImageDown, Video, CoffeeIcon, Heart, ChevronUp } from "lucide-react";
 
 import {
     Collapsible,
@@ -32,6 +32,11 @@ const tools = [
         title: "Image Compressor",
         url: "/image-compressor",
         icon: ImageDown,
+    },
+    {
+        title: "Video Converter",
+        url: "/video-converter",
+        icon: Video,
     },
 ];
 

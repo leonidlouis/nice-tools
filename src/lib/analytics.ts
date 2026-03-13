@@ -14,7 +14,14 @@ type EventName =
     | 'clear_all_clicked'
     | 'support_menu_opened'
     | 'preview_opened'
-    | 'preview_toggle_clicked';
+    | 'preview_toggle_clicked'
+    | 'video_files_added'
+    | 'video_conversion_started'
+    | 'video_batch_completed'
+    | 'video_error_occurred'
+    | 'video_preview_opened'
+    | 'video_download_all'
+    | 'video_settings_changed';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EventProperties = { active_user_account?: string | null; } & Record<string, any>;
