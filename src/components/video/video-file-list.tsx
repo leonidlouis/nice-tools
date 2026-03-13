@@ -228,7 +228,7 @@ function ErrorDetailsBox({ files }: ErrorDetailsBoxProps) {
     };
 
     return (
-        <Card className="mt-4 border-destructive/50 bg-destructive/5 gap-1">
+        <Card className="mt-4 border-destructive/50 bg-destructive/5 gap-1 ">
             <CardHeader className={isExpanded ? "pb-3" : "pb-0"}>
                 <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-sm sm:text-base text-destructive">
@@ -266,7 +266,7 @@ function ErrorDetailsBox({ files }: ErrorDetailsBoxProps) {
                             <p className="text-xs text-muted-foreground">
                                 Encountered errors while converting your video(s).{' '}
                                 <a
-                                    href={`mailto:hello@bylouis.io?subject=Video%20Conversion%20Error%20Report&body=${buildEmailBody()}`}
+                                    href={`mailto:louisleonid325@gmail.com?subject=Video%20Conversion%20Error%20Report&body=${buildEmailBody()}`}
                                     className="text-destructive hover:underline font-medium"
                                     onClick={() => sendEvent('video_error_report_clicked', { error_count: errorFiles.length })}
                                 >
@@ -282,7 +282,7 @@ function ErrorDetailsBox({ files }: ErrorDetailsBoxProps) {
                     <p className="text-xs text-muted-foreground py-3">
                         Encountered errors while converting your video(s).{' '}
                         <a
-                            href={`mailto:hello@bylouis.io?subject=Video%20Conversion%20Error%20Report&body=${buildEmailBody()}`}
+                            href={`mailto:louisleonid325@gmail.com?subject=Video%20Conversion%20Error%20Report&body=${buildEmailBody()}`}
                             className="text-destructive hover:underline font-medium"
                             onClick={() => sendEvent('video_error_report_clicked', { error_count: errorFiles.length })}
                         >
