@@ -144,6 +144,7 @@ export default function VideoConverterPage() {
                 outputBlob: undefined,
                 outputSize: undefined,
                 progress: 0,
+                name: f.file.name, // Reset name to original
             }));
             setFiles(filesToProcess);
         }
@@ -204,7 +205,13 @@ export default function VideoConverterPage() {
     const handleRetryFile = useCallback(async (file: VideoFile) => {
         if (file.status !== 'error') return;
 
-        const resetFile: VideoFile = { ...file, status: 'pending', error: undefined, progress: 0 };
+        const resetFile: VideoFile = { 
+            ...file, 
+            status: 'pending', 
+            error: undefined, 
+            progress: 0,
+            name: file.file.name, // Reset name to original
+        };
         updateFile(resetFile);
 
         setIsProcessing(true);
@@ -316,7 +323,7 @@ export default function VideoConverterPage() {
                                 </p>
                                 <ul className="text-amber-700 dark:text-amber-500 list-disc list-inside space-y-0.5">
                                     <li><strong>BETA:</strong> Not yet tested with all video types — bugs may occur</li>
-                                    <li><strong>Browser-based:</strong> Your files stay private, but conversion is slower than desktop apps</li>
+                                    <li><strong>Browser-based:</strong> Performance is expected to be slower than desktop apps; converting 10mb+ files may take a while</li>
                                 </ul>
                                 <p className="text-amber-700 dark:text-amber-500 pt-0.5">
                                     Spotted a bug? <a href="mailto:louisleonid325@gmail.com" className="underline hover:text-amber-900 dark:hover:text-amber-300 font-medium">Email me here</a>
@@ -409,17 +416,6 @@ export default function VideoConverterPage() {
                                                 : 'Finished'}
                                 </Button>
                             </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Empty State */}
-                {files.length === 0 && (
-                    <div className="text-center animate-in fade-in zoom-in-95 duration-500">
-                        <div className="flex flex-wrap justify-center gap-2">
-                            <p id="upload-instructions" className="text-xs text-muted-foreground">
-                                Supports MP4, WebM, MOV, AVI, MKV • No uploads, processed locally
-                            </p>
                         </div>
                     </div>
                 )}

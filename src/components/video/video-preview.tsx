@@ -178,20 +178,22 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
             <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden">
                 <DialogHeader className="p-4 pb-0">
                     <div className="flex items-center justify-between">
-                        <DialogTitle className="text-base sm:text-lg truncate pr-4">
-                            {file.name}
+                        <DialogTitle className="text-base sm:text-lg truncate pr-4 max-w-[300px] sm:max-w-[400px] md:max-w-[500px]" title={file.name}>
+                            {file.name.length > 60 
+                                ? `${file.name.slice(0, 35)}...${file.name.slice(-20)}`
+                                : file.name}
                         </DialogTitle>
                     </div>
                 </DialogHeader>
 
                 <div className="p-4 space-y-4">
                     {/* Video Player */}
-                    <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+                    <div className="relative bg-black rounded-lg overflow-hidden">
                         {currentVideoUrl ? (
                             <video
                                 ref={videoRef}
                                 src={currentVideoUrl}
-                                className="w-full h-full"
+                                className="w-full h-auto max-h-[70vh]"
                                 onTimeUpdate={handleTimeUpdate}
                                 onLoadedMetadata={handleLoadedMetadata}
                                 onPlay={() => setIsPlaying(true)}
@@ -200,7 +202,7 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
                                 playsInline
                             />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-white/50">
+                            <div className="w-full aspect-video flex items-center justify-center text-white/50">
                                 Loading preview...
                             </div>
                         )}
@@ -308,27 +310,28 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
                         )}
                     </div>
 
-                    {/* Before/After Toggle - moved to bottom */}
-                    <div className="flex items-center justify-center">
+                    {/* Action Buttons - side by side on desktop, stacked on mobile */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        {/* Before/After Toggle */}
                         <button
                             onClick={toggleBeforeAfter}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-muted rounded-lg hover:bg-muted-foreground/10 transition-colors"
+                            className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-muted rounded-lg hover:bg-muted-foreground/10 transition-colors sm:flex-1"
                         >
                             <SwitchCamera className="w-4 h-4" />
                             {showOriginal ? 'Showing: Original' : 'Showing: Converted'}
                         </button>
-                    </div>
 
-                    {/* Download Button */}
-                    {file.outputBlob && (
-                        <Button
-                            onClick={handleDownload}
-                            className="w-full gap-2"
-                        >
-                            <Download className="w-4 h-4" />
-                            Download video
-                        </Button>
-                    )}
+                        {/* Download Button */}
+                        {file.outputBlob && (
+                            <Button
+                                onClick={handleDownload}
+                                className="w-full sm:w-auto sm:flex-1 gap-2"
+                            >
+                                <Download className="w-4 h-4" />
+                                Download video
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
