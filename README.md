@@ -1,6 +1,6 @@
 # Tools | bylouis.io ⚡
 
-A curated collection of free, privacy-first browser tools. No sign-ups, no uploads — everything runs on your device.
+A curated set of carefully made, useful tools.
 
 > **[tools.bylouis.io](https://tools.bylouis.io)**
 
