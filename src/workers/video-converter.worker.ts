@@ -9,9 +9,8 @@ import type {
   ConversionPhase,
   BrowserCapabilities,
 } from '../types/video-conversion';
-import { QUALITY_CRF, RESOLUTION_DIMENSIONS } from '../types/video-conversion';
-import { convertWithWebCodecs } from '../lib/webcodecs-encoder';
-import { detectCapabilities, canUseWebCodecs } from '../lib/video-conversion';
+import { buildFFmpegArgs } from '../lib/ffmpeg-encoder';
+import { canUseWebpWasm, convertWithWebpWasm } from '../lib/webp-wasm-encoder';
 
 // Worker state
 interface WorkerState {
@@ -105,6 +104,11 @@ async function initFFmpeg(multiThreaded: boolean): Promise<FFmpeg> {
 
   // Set up logging
   ffmpeg.on('log', ({ message, type }) => {
+    // Filter out noisy palettegen progress messages
+    if (message.includes('[Parsed_palettegen') && message.includes('colors generated')) {
+      return; // Skip these verbose palette generation messages
+    }
+
     console.log('[FFmpeg]', type, message);
     // Capture recent logs for error reporting
     state.recentLogs.push(message);
@@ -120,6 +124,18 @@ async function initFFmpeg(multiThreaded: boolean): Promise<FFmpeg> {
 
   // Set up progress tracking with time estimation
   ffmpeg.on('progress', ({ progress, time }) => {
+    // Validate progress values to prevent overflow/insane percentages
+    if (typeof progress !== 'number' || !isFinite(progress) || progress < 0 || progress > 1) {
+      console.warn('[FFmpeg] Invalid progress value received:', progress, 'Time:', time);
+      return; // Skip this progress update
+    }
+
+    // Also validate time to catch extreme values
+    if (typeof time === 'number' && (!isFinite(time) || time > Number.MAX_SAFE_INTEGER / 2)) {
+      console.warn('[FFmpeg] Invalid time value received:', time);
+      // Continue with progress but ignore the time value
+    }
+
     console.log('[FFmpeg] Progress:', Math.round(progress * 100) + '%', 'Time:', time);
     if (state.currentJob) {
       const progressPercent = Math.min(Math.round(progress * 100), 100);
@@ -187,64 +203,7 @@ async function initFFmpeg(multiThreaded: boolean): Promise<FFmpeg> {
   return ffmpeg;
 }
 
-// Build FFmpeg arguments based on settings
-function buildFFmpegArgs(
-  input: string,
-  output: string,
-  settings: VideoConversionSettings
-): string[] {
-  const args = ['-nostdin', '-fflags', '+genpts', '-i', input];
 
-  // Video conversion - only WebM and GIF supported
-  if (settings.outputFormat === 'gif') {
-    // GIF encoding - no audio, use GIF codec
-    args.push('-an'); // No audio for GIF
-
-    // Build GIF filter chain
-    let gifFilter = 'fps=15';
-    if (settings.resolution !== 'original') {
-      const dims = RESOLUTION_DIMENSIONS[settings.resolution];
-      if (dims) {
-        gifFilter += `,scale=${dims.width}:${dims.height}:force_original_aspect_ratio=decrease:flags=lanczos`;
-      }
-    }
-    gifFilter += ',split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse';
-    args.push('-vf', gifFilter);
-  } else if (settings.outputFormat === 'webm') {
-    // Explicit stream mapping: video first, then audio (optional)
-    // The '?' suffix makes audio optional - videos without audio won't fail
-    args.push('-map', '0:v:0', '-map', '0:a:0?');
-
-    // WebM encoding with VP8 video and Vorbis audio
-    args.push('-c:v', 'libvpx'); // VP8 encoder is 'libvpx'
-    args.push('-crf', '10'); // VP8 CRF (4-63, lower is better quality)
-    args.push('-b:v', '0'); // Use CRF mode (variable bitrate)
-    // Only encode audio if stream exists
-    args.push('-c:a', 'libvorbis');
-    args.push('-b:a', '128k');
-
-    // Resolution scaling for WebM
-    if (settings.resolution !== 'original') {
-      const dims = RESOLUTION_DIMENSIONS[settings.resolution];
-      if (dims) {
-        args.push(
-          '-vf',
-          `scale=${dims.width}:${dims.height}:force_original_aspect_ratio=decrease`
-        );
-      }
-    }
-  }
-
-  // Frame rate (not for GIF)
-  if (settings.fps !== 'original' && settings.outputFormat !== 'gif') {
-    args.push('-r', settings.fps);
-  }
-
-  // Overwrite output
-  args.push('-y', output);
-
-  return args;
-}
 
 // Cache for browser capabilities (detected once per worker session)
 let workerCapabilities: BrowserCapabilities | null = null;
@@ -356,13 +315,13 @@ function canUseWebCodecsInWorker(
     return false;
   }
 
-  // GIF requires ffmpeg.wasm
-  if (settings.outputFormat === 'gif') {
+  // GIF and WebP require ffmpeg.wasm (WebCodecs only supports video codecs)
+  if (settings.outputFormat === 'gif' || settings.outputFormat === 'webp') {
     return false;
   }
 
-  // WebM (VP8/VP9) - WebCodecs can handle this if VP8 or VP9 is supported
-  if (settings.outputFormat === 'webm') {
+  // WebM and GIFV - WebCodecs can handle these (GIFV is just renamed WebM)
+  if (settings.outputFormat === 'webm' || settings.outputFormat === 'gifv') {
     return capabilities.webCodecsVP9Supported || capabilities.webCodecsVP8Supported;
   }
 
@@ -378,8 +337,12 @@ async function convertWithFFmpeg(
   settings: VideoConversionSettings,
   signal: AbortSignal
 ): Promise<void> {
+  // Force single-threaded mode for GIF (multi-threading doesn't work with GIF encoding)
+  const isGifFormat = settings.outputFormat === 'gif';
+  const useMultiThreading = isGifFormat ? false : settings.multiThreaded;
+
   // Initialize FFmpeg with appropriate threading mode
-  const ffmpeg = await getFFmpeg(settings.multiThreaded);
+  const ffmpeg = await getFFmpeg(useMultiThreading);
   const inputPath = `input_${id}.tmp`;
   const outputPath = `output_${id}.${settings.outputFormat}`;
 
@@ -448,7 +411,11 @@ async function convertWithFFmpeg(
       setTimeout(() => reject(new Error('Conversion timeout - process may be stuck')), 1800000); // 30 minute timeout
     });
 
-    // Heartbeat monitoring to detect stuck conversions (no progress for 30 seconds)
+    // Heartbeat monitoring to detect stuck conversions
+    // GIF palette generation can take a long time without progress updates, so use longer timeout
+    const isGifFormat = settings.outputFormat === 'gif';
+    const heartbeatTimeout = isGifFormat ? 300000 : 60000; // 5 min for GIF, 1 min for others
+    
     const heartbeatPromise = new Promise<void>((_, reject) => {
       const checkInterval = setInterval(() => {
         if (aborted) {
@@ -457,7 +424,7 @@ async function convertWithFFmpeg(
           return;
         }
         const timeSinceLastProgress = Date.now() - state.lastProgressTime;
-        if (timeSinceLastProgress > 60000) { // 60 seconds
+        if (timeSinceLastProgress > heartbeatTimeout) {
           clearInterval(checkInterval);
           reject(new Error(`Conversion stuck - no progress for ${Math.round(timeSinceLastProgress / 1000)} seconds`));
         }
@@ -467,26 +434,51 @@ async function convertWithFFmpeg(
       execPromise.then(() => clearInterval(checkInterval)).catch(() => clearInterval(checkInterval));
     });
 
+    console.log('[Worker] Waiting for conversion to complete...');
     await Promise.race([execPromise, timeoutPromise, heartbeatPromise]);
+    console.log('[Worker] Conversion promise resolved successfully');
 
     // Check if conversion actually succeeded by looking for error messages in logs
     // NOTE: 'Aborted()' appears in successful conversions too (process termination), don't use it as error indicator
-    const hasError = state.recentLogs.some(log =>
-      log.includes('Conversion failed') ||
-      log.includes('Error initializing') ||
-      log.includes('Invalid argument') ||
-      log.includes('Unknown encoder') ||
-      log.includes('Could not write header') ||
-      log.includes('Stream map') ||
-      log.includes('matches no streams')
+    // NOTE: 'Stream map' is intentionally NOT in this list - FFmpeg outputs stream mapping info in normal operation
+    // The real error is 'Stream map' + 'matches no streams' which is checked separately in real-time
+    const errorIndicators = [
+      'Conversion failed',
+      'Error initializing',
+      'Invalid argument',
+      'Unknown encoder',
+      'Could not write header',
+      'matches no streams'
+    ];
+    
+    console.log('[Worker] Checking logs for errors...');
+    console.log('[Worker] Total logs:', state.recentLogs.length);
+    console.log('[Worker] Last 5 logs:', state.recentLogs.slice(-5));
+    
+    const matchedError = state.recentLogs.find(log =>
+      errorIndicators.some(indicator => log.includes(indicator))
     );
-
-    if (hasError) {
-      throw new Error(`FFmpeg conversion failed. Check codec compatibility for ${settings.outputFormat} format.`);
+    
+    if (matchedError) {
+      console.error('[Worker] FFmpeg error detected in logs:', matchedError);
+      console.error('[Worker] Recent logs:', state.recentLogs.slice(-10));
+      throw new Error(`FFmpeg conversion failed: ${matchedError}. Check codec compatibility for ${settings.outputFormat} format.`);
     }
+    
+    console.log('[Worker] No errors detected in logs, proceeding to read output file');
 
     // Phase 3: Writing output
     sendProgress(id, 95, 'writing');
+    
+    // Verify output file exists before reading
+    try {
+      await ffmpeg.readFile(outputPath);
+    } catch (readError) {
+      console.error('[Worker] Output file not found:', outputPath);
+      console.error('[Worker] Read error:', readError);
+      throw new Error('Conversion appeared to succeed but output file was not created');
+    }
+    
     const outputData = await ffmpeg.readFile(outputPath);
 
     // Convert to ArrayBuffer for transfer
@@ -568,6 +560,20 @@ async function convertVideo(
 ): Promise<void> {
   // Detect capabilities to determine which engine to use
   const capabilities = await detectWorkerCapabilities();
+  
+  // Check for webp.wasm fast path (when implemented)
+  const useWebpWasm = canUseWebpWasm(settings, capabilities);
+  if (useWebpWasm) {
+    console.log('[Worker] Using webp.wasm fast path for WebP conversion');
+    try {
+      await convertWithWebpWasmInWorker(id, videoData, fileName, settings, signal);
+      return;
+    } catch (error) {
+      console.warn('[Worker] webp.wasm failed, falling back to FFmpeg:', error);
+      // Fall through to ffmpeg.wasm
+    }
+  }
+  
   const useWebCodecs = canUseWebCodecsInWorker(settings, capabilities);
 
   if (useWebCodecs) {
@@ -579,6 +585,8 @@ async function convertVideo(
       console.log('[Worker] WebCodecs not supported in this browser, using FFmpeg.wasm (legacy mode)');
     } else if (settings.outputFormat === 'gif') {
       console.log('[Worker] GIF output requires FFmpeg.wasm (WebCodecs does not support GIF)');
+    } else if (settings.outputFormat === 'webp') {
+      console.log('[Worker] WebP output using FFmpeg.wasm (webp.wasm fast path not available)');
     } else if (!capabilities.webCodecsVP9Supported && !capabilities.webCodecsVP8Supported) {
       console.log('[Worker] VP8/VP9 encoding not supported, using FFmpeg.wasm (legacy mode)');
     } else {
@@ -632,6 +640,7 @@ async function convertWithWebCodecsInWorker(
       (progress) => {
         // Map progress (20-95%) to our progress range
         const mappedProgress = 20 + Math.round((progress / 100) * 75);
+        console.log('[Worker] WebCodecs progress:', progress, '-> mapped:', mappedProgress);
         sendProgress(id, mappedProgress, 'converting');
       }
     );
@@ -695,6 +704,78 @@ async function convertWithWebCodecsInWorker(
   }
 }
 
+/**
+ * Converts video to animated WebP using webp.wasm in the worker.
+ * This is a wrapper around the webp-wasm-encoder module.
+ */
+async function convertWithWebpWasmInWorker(
+  id: string,
+  videoData: ArrayBuffer,
+  fileName: string,
+  settings: VideoConversionSettings,
+  signal: AbortSignal
+): Promise<void> {
+  let aborted = false;
+  const abortHandler = () => {
+    aborted = true;
+  };
+  signal.addEventListener('abort', abortHandler);
+
+  try {
+    // Progress callback wrapper
+    const onProgress = (phase: ConversionPhase, progress: number) => {
+      if (!aborted) {
+        sendProgress(id, progress, phase);
+      }
+    };
+
+    // Perform conversion
+    const outputData = await convertWithWebpWasm(
+      videoData,
+      fileName,
+      settings,
+      onProgress
+    );
+
+    if (aborted) {
+      throw new Error('Conversion cancelled');
+    }
+
+    // Send result
+    const response: VideoWorkerResponse = {
+      type: 'result',
+      payload: {
+        id,
+        status: 'success',
+        outputData: outputData.buffer.slice(
+          outputData.byteOffset,
+          outputData.byteOffset + outputData.byteLength
+        ) as ArrayBuffer,
+        outputSize: outputData.byteLength,
+      },
+    };
+    self.postMessage(response, { transfer: [response.payload.outputData!] });
+
+  } catch (error) {
+    if (aborted || (error instanceof Error && error.message.includes('cancelled'))) {
+      const response: VideoWorkerResponse = {
+        type: 'result',
+        payload: {
+          id,
+          status: 'cancelled',
+        },
+      };
+      self.postMessage(response);
+    } else {
+      // Re-throw for fallback handling
+      throw error;
+    }
+  } finally {
+    signal.removeEventListener('abort', abortHandler);
+    state.currentJob = null;
+  }
+}
+
 // Worker message handler
 self.onmessage = async (event: MessageEvent<VideoWorkerMessage>) => {
   const message = event.data;
@@ -720,6 +801,8 @@ self.onmessage = async (event: MessageEvent<VideoWorkerMessage>) => {
 
   if (message.type === 'convert') {
     const { id, videoData, fileName, settings } = message.payload;
+
+    console.log("[Worker] Received conversion request:", { id, fileName, outputFormat: settings.outputFormat, resolution: settings.resolution, fps: settings.fps });
 
     // Create abort controller for this job
     const abortController = new AbortController();
@@ -751,10 +834,16 @@ self.onmessage = async (event: MessageEvent<VideoWorkerMessage>) => {
     if (state.currentJob?.id === id) {
       console.log('[Worker] Cancelling conversion:', id);
       state.currentJob.abort();
+      state.currentJob = null; // Clear immediately to stop progress updates
       // Also terminate FFmpeg to stop the process immediately
       if (state.ffmpeg) {
         console.log('[Worker] Terminating FFmpeg instance');
-        state.ffmpeg.terminate();
+        try {
+          state.ffmpeg.terminate();
+        } catch (error) {
+          console.error('[Worker] Error terminating FFmpeg:', error);
+          // Continue with cleanup even if terminate fails
+        }
         state.ffmpeg = null;
         state.initPromise = null;
       }

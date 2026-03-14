@@ -1,6 +1,7 @@
 // Video conversion types for the Video Converter tool
 
-export type VideoFormat = 'webm' | 'gif';
+export type VideoFormat = 'webm' | 'gif' | 'gifv' | 'webp';
+export type GifOptimizationLevel = 'size' | 'balanced' | 'quality';
 export type ConversionMode = 'convert';
 export type VideoQuality = 'high' | 'medium' | 'low';
 export type VideoResolution = 'original' | '4k' | '1080p' | '720p' | '480p';
@@ -18,6 +19,7 @@ export interface VideoConversionSettings {
   preset: VideoPreset;
   fps: VideoFps;
   multiThreaded: boolean; // Use multi-threaded FFmpeg for faster processing
+  gifOptimization: GifOptimizationLevel; // GIF-specific optimization
 }
 
 export type ConversionStatus = 'pending' | 'processing' | 'done' | 'error' | 'cancelled';
@@ -105,10 +107,53 @@ export const SUPPORTED_VIDEO_EXTENSIONS = [
 ];
 
 // Format display names
-export const FORMAT_DISPLAY_NAMES: Record<string, string> = {
-  webm: 'WebM',
-  gif: 'GIF Animation - this is slow and the filesize result will be 100x larger than the original video; gif is an ancient inefficient format, will add options here to downscale the video first before converting to .gif',
+export const FORMAT_DISPLAY_NAMES: Record<VideoFormat, string> = {
+  webm: 'WebM Video - standard web video format with good compression',
+  gif: "GIF Animation - legacy format, 10-100x larger file size, honestly you shouldn't use this it's old and bad.",
+  gifv: 'GIFV - modern, better GIFs, 60-80% smaller',
+  webp: 'WebP Animation - modern format, works in <img> tags (25-35% smaller than GIF) - this will use software encoding, so it will be much slower.',
 };
+
+// Format short names for UI
+export const FORMAT_SHORT_NAMES: Record<VideoFormat, string> = {
+  webm: 'WebM',
+  gif: 'GIF',
+  gifv: 'GIFV',
+  webp: 'WebP',
+};
+
+// GIF Optimization presets - size/balanced/quality
+export const GIF_OPTIMIZATION_PRESETS: Record<GifOptimizationLevel, {
+  fps: number;
+  maxColors: number;
+  resolution: VideoResolution;
+  dither: string;
+  statsMode: string;
+}> = {
+  size: {
+    fps: 10,
+    maxColors: 64,
+    resolution: '480p',
+    dither: 'bayer',
+    statsMode: 'single',
+  },
+  balanced: {
+    fps: 12,
+    maxColors: 128,
+    resolution: '720p',
+    dither: 'floyd_steinberg',
+    statsMode: 'single',
+  },
+  quality: {
+    fps: 15,
+    maxColors: 256,
+    resolution: '1080p',
+    dither: 'floyd_steinberg',
+    statsMode: 'full',
+  },
+};
+
+
 
 // Quality settings (CRF values for libx264)
 export const QUALITY_CRF: Record<VideoQuality, number> = {
@@ -132,9 +177,9 @@ export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 // Phase display names
 export const PHASE_DISPLAY_NAMES: Record<ConversionPhase, string> = {
-  reading: 'Reading file...',
-  converting: 'Converting video...',
-  writing: 'Writing output...',
+  reading: 'Preparing...',
+  converting: 'Converting...',
+  writing: 'Finalizing...',
   complete: 'Complete',
 };
 
