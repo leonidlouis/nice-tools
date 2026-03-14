@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -8,7 +8,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, Play, Pause, Volume2, VolumeX, SwitchCamera, Maximize } from 'lucide-react';
+import { Download, Play, Pause, Volume2, VolumeX, SwitchCamera, Maximize, Loader2 } from 'lucide-react';
 import type { VideoFile } from '@/types/video-conversion';
 import { formatBytes } from '@/lib/video-conversion';
 
@@ -25,47 +25,178 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
     const [volume, setVolume] = useState(1);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [videoReady, setVideoReady] = useState(false);
+    
     const videoRef = useRef<HTMLVideoElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    
+    // Store playback state to restore after switch
+    const savedStateRef = useRef({
+        currentTime: 0,
+        wasPlaying: false,
+    });
 
-    // Create object URLs using useMemo for synchronous computation
-    // eslint-disable-next-line react-hooks/preserve-manual-memoization
-    const outputVideoUrl = useMemo(() => {
-        if (file?.outputBlob && isOpen) {
-            return URL.createObjectURL(file.outputBlob);
-        }
-        return null;
-    }, [file?.outputBlob, isOpen]);
+    // Object URLs stored in ref to prevent recreation
+    const urlsRef = useRef<{ original: string | null; converted: string | null }>({
+        original: null,
+        converted: null,
+    });
 
-    // eslint-disable-next-line react-hooks/preserve-manual-memoization
-    const originalVideoUrl = useMemo(() => {
-        if (file?.file && isOpen) {
-            return URL.createObjectURL(file.file);
-        }
-        return null;
-    }, [file?.file, isOpen]);
-
-    // Cleanup object URLs
+    // Reset state when dialog opens with a new file
     useEffect(() => {
+        if (isOpen && file) {
+            // Reset all state for new file
+            setShowOriginal(false);
+            setIsPlaying(false);
+            setIsMuted(true);
+            setVolume(1);
+            setDuration(0);
+            setCurrentTime(0);
+            setIsLoading(false);
+            savedStateRef.current = { currentTime: 0, wasPlaying: false };
+            
+            // Create new URLs
+            urlsRef.current.original = URL.createObjectURL(file.file);
+            if (file.outputBlob) {
+                urlsRef.current.converted = URL.createObjectURL(file.outputBlob);
+            }
+            setVideoReady(true);
+        }
+        
         return () => {
-            if (outputVideoUrl) {
-                URL.revokeObjectURL(outputVideoUrl);
+            if (urlsRef.current.original) {
+                URL.revokeObjectURL(urlsRef.current.original);
+                urlsRef.current.original = null;
             }
-            if (originalVideoUrl) {
-                URL.revokeObjectURL(originalVideoUrl);
+            if (urlsRef.current.converted) {
+                URL.revokeObjectURL(urlsRef.current.converted);
+                urlsRef.current.converted = null;
             }
+            setVideoReady(false);
         };
-    }, [outputVideoUrl, originalVideoUrl]);
+    }, [isOpen, file]);
 
-    // Set volume on video element when it changes or when switching videos
+    // Determine current source
+    const currentSrc = showOriginal 
+        ? urlsRef.current.original 
+        : urlsRef.current.converted;
+
+    // Check if output is an image format
+    const isImageFormat = !showOriginal && file && 
+        (file.name.endsWith('.gif') || file.name.endsWith('.webp'));
+
+    // Handle toggle with state preservation
+    const handleToggle = useCallback(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        // Save current state
+        savedStateRef.current = {
+            currentTime: video.currentTime,
+            wasPlaying: !video.paused,
+        };
+
+        // Show loading
+        setIsLoading(true);
+        
+        // Switch mode (triggers src change)
+        setShowOriginal(prev => !prev);
+    }, []);
+
+    // Restore state when video loads after switch
+    const handleLoadedMetadata = useCallback(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        setDuration(video.duration);
+        setIsLoading(false);
+
+        // Restore time
+        video.currentTime = savedStateRef.current.currentTime;
+        
+        // Restore play state
+        if (savedStateRef.current.wasPlaying) {
+            video.play().catch(() => setIsPlaying(false));
+        }
+    }, []);
+
+    // Sync video state with React state
     useEffect(() => {
         const video = videoRef.current;
         if (video) {
             video.volume = isMuted ? 0 : volume;
+            video.muted = isMuted;
         }
-    }, [volume, isMuted, showOriginal]);
+    }, [volume, isMuted]);
 
-    const handleDownload = () => {
+    const handleTimeUpdate = useCallback(() => {
+        const video = videoRef.current;
+        if (video) {
+            setCurrentTime(video.currentTime);
+        }
+    }, []);
+
+    const togglePlay = useCallback(() => {
+        const video = videoRef.current;
+        if (!video) return;
+        
+        if (isPlaying) {
+            video.pause();
+        } else {
+            video.play().catch(() => {});
+        }
+    }, [isPlaying]);
+
+    const toggleMute = useCallback(() => {
+        const video = videoRef.current;
+        if (!video) return;
+        
+        const newMuted = !isMuted;
+        video.muted = newMuted;
+        setIsMuted(newMuted);
+    }, [isMuted]);
+
+    const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const video = videoRef.current;
+        if (!video) return;
+        
+        const newVolume = parseFloat(e.target.value);
+        video.volume = newVolume;
+        setVolume(newVolume);
+        
+        if (newVolume === 0) {
+            video.muted = true;
+            setIsMuted(true);
+        } else if (isMuted) {
+            video.muted = false;
+            setIsMuted(false);
+        }
+    }, [isMuted]);
+
+    const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const video = videoRef.current;
+        if (!video) return;
+        
+        const time = parseFloat(e.target.value);
+        video.currentTime = time;
+        setCurrentTime(time);
+    }, []);
+
+    const toggleFullscreen = useCallback(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            container.requestFullscreen();
+        }
+    }, []);
+
+    const handleDownload = useCallback(() => {
         if (!file?.outputBlob) return;
+        
         const url = URL.createObjectURL(file.outputBlob);
         const a = document.createElement('a');
         a.href = url;
@@ -74,94 +205,7 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-    };
-
-    const togglePlay = () => {
-        if (videoRef.current) {
-            if (isPlaying) {
-                videoRef.current.pause();
-            } else {
-                videoRef.current.play();
-            }
-            setIsPlaying(!isPlaying);
-        }
-    };
-
-    const toggleMute = () => {
-        if (videoRef.current) {
-            videoRef.current.muted = !isMuted;
-            setIsMuted(!isMuted);
-        }
-    };
-
-    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newVolume = parseFloat(e.target.value);
-        setVolume(newVolume);
-        if (videoRef.current) {
-            videoRef.current.volume = newVolume;
-            if (newVolume === 0) {
-                setIsMuted(true);
-                videoRef.current.muted = true;
-            } else if (isMuted) {
-                setIsMuted(false);
-                videoRef.current.muted = false;
-            }
-        }
-    };
-
-    const handleTimeUpdate = () => {
-        if (videoRef.current) {
-            setCurrentTime(videoRef.current.currentTime);
-        }
-    };
-
-    const handleLoadedMetadata = () => {
-        if (videoRef.current) {
-            setDuration(videoRef.current.duration);
-        }
-    };
-
-    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const time = parseFloat(e.target.value);
-        if (videoRef.current) {
-            videoRef.current.currentTime = time;
-            setCurrentTime(time);
-        }
-    };
-
-    const toggleFullscreen = () => {
-        const video = videoRef.current;
-        if (video) {
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-            } else {
-                video.requestFullscreen();
-            }
-        }
-    };
-
-    const toggleBeforeAfter = useCallback(() => {
-        const newShowOriginal = !showOriginal;
-        setShowOriginal(newShowOriginal);
-        
-        // Sync video time between original and converted
-        if (videoRef.current) {
-            const currentTimeValue = videoRef.current.currentTime;
-            const wasPlaying = !videoRef.current.paused;
-            
-            // Small delay to let the video element update with new source
-            setTimeout(() => {
-                if (videoRef.current) {
-                    videoRef.current.currentTime = currentTimeValue;
-                    videoRef.current.volume = volume;
-                    videoRef.current.muted = isMuted;
-                    if (wasPlaying) {
-                        videoRef.current.play().catch(() => {});
-                    }
-                }
-            }, 50);
-        }
-    }, [showOriginal, volume, isMuted]);
+    }, [file]);
 
     const formatTime = (time: number) => {
         const minutes = Math.floor(time / 60);
@@ -171,57 +215,60 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
 
     if (!file) return null;
 
-    const currentVideoUrl = showOriginal ? originalVideoUrl : outputVideoUrl;
-
-    // Check if output is an image format (GIF or WebP)
-    const isImageFormat = !showOriginal && (file.name.endsWith('.gif') || file.name.endsWith('.webp'));
-
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden">
                 <DialogHeader className="p-4 pb-0">
-                    <div className="flex items-center justify-between">
-                        <DialogTitle className="text-base sm:text-lg truncate pr-4 max-w-[300px] sm:max-w-[400px] md:max-w-[500px]" title={file.name}>
-                            {file.name.length > 60 
-                                ? `${file.name.slice(0, 35)}...${file.name.slice(-20)}`
-                                : file.name}
-                        </DialogTitle>
-                    </div>
+                    <DialogTitle className="text-base sm:text-lg truncate pr-4 max-w-[300px] sm:max-w-[400px] md:max-w-[500px]" title={file.name}>
+                        {file.name.length > 60 
+                            ? `${file.name.slice(0, 35)}...${file.name.slice(-20)}`
+                            : file.name}
+                    </DialogTitle>
                 </DialogHeader>
 
                 <div className="p-4 space-y-4">
-                    {/* Video/Image Player */}
-                    <div className="relative bg-black rounded-lg overflow-hidden">
-                        {currentVideoUrl ? (
-                            isImageFormat ? (
-                                <div className="flex items-center justify-center min-h-[200px]">
-                                    <img
-                                        src={currentVideoUrl}
-                                        alt={file.name}
-                                        className="max-w-full max-h-[70vh] object-contain"
-                                    />
-                                </div>
-                            ) : (
-                                <video
-                                    ref={videoRef}
-                                    src={currentVideoUrl}
-                                    className="w-full h-auto max-h-[70vh]"
-                                    onTimeUpdate={handleTimeUpdate}
-                                    onLoadedMetadata={handleLoadedMetadata}
-                                    onPlay={() => setIsPlaying(true)}
-                                    onPause={() => setIsPlaying(false)}
-                                    muted={isMuted}
-                                    playsInline
-                                />
-                            )
+                    {/* Video Container */}
+                    <div 
+                        ref={containerRef}
+                        className="relative bg-black rounded-lg overflow-hidden"
+                        style={{ aspectRatio: '16/9', minHeight: '200px' }}
+                    >
+                        {isImageFormat ? (
+                            <img
+                                src={urlsRef.current.converted || ''}
+                                alt={file.name}
+                                className="w-full h-full object-contain"
+                            />
                         ) : (
-                            <div className="w-full aspect-video flex items-center justify-center text-white/50">
-                                Loading preview...
-                            </div>
+                            <>
+                                {/* SINGLE VIDEO ELEMENT */}
+                                {videoReady && (
+                                    <video
+                                        key={file.id + (showOriginal ? '-original' : '-converted')}
+                                        ref={videoRef}
+                                        src={currentSrc || ''}
+                                        className="w-full h-full object-contain"
+                                        onLoadedMetadata={handleLoadedMetadata}
+                                        onTimeUpdate={handleTimeUpdate}
+                                        onPlay={() => setIsPlaying(true)}
+                                        onPause={() => setIsPlaying(false)}
+                                        muted={isMuted}
+                                        playsInline
+                                        preload="metadata"
+                                    />
+                                )}
+                                
+                                {/* Loading Overlay */}
+                                {isLoading && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                                        <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                    </div>
+                                )}
+                            </>
                         )}
 
-                        {/* Custom Controls Overlay */}
-                        {currentVideoUrl && (
+                        {/* Custom Controls */}
+                        {!isImageFormat && !isLoading && (
                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                                 {/* Progress Bar */}
                                 <input
@@ -235,21 +282,17 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
 
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        {/* Play/Pause Button */}
+                                        {/* Play/Pause */}
                                         <Button
                                             variant="ghost"
                                             size="icon"
                                             onClick={togglePlay}
                                             className="h-8 w-8 text-white hover:bg-white/20"
                                         >
-                                            {isPlaying ? (
-                                                <Pause className="w-4 h-4" />
-                                            ) : (
-                                                <Play className="w-4 h-4" />
-                                            )}
+                                            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                                         </Button>
 
-                                        {/* Volume Control with Slider */}
+                                        {/* Volume */}
                                         <div className="flex items-center gap-2">
                                             <Button
                                                 variant="ghost"
@@ -257,11 +300,7 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
                                                 onClick={toggleMute}
                                                 className="h-8 w-8 text-white hover:bg-white/20"
                                             >
-                                                {isMuted || volume === 0 ? (
-                                                    <VolumeX className="w-4 h-4" />
-                                                ) : (
-                                                    <Volume2 className="w-4 h-4" />
-                                                )}
+                                                {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                                             </Button>
                                             <input
                                                 type="range"
@@ -274,13 +313,13 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
                                             />
                                         </div>
 
-                                        {/* Time Display */}
+                                        {/* Time */}
                                         <span className="text-xs text-white/80">
                                             {formatTime(currentTime)} / {formatTime(duration)}
                                         </span>
                                     </div>
 
-                                    {/* Fullscreen Button */}
+                                    {/* Fullscreen */}
                                     <Button
                                         variant="ghost"
                                         size="icon"
@@ -323,18 +362,19 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
                         )}
                     </div>
 
-                    {/* Action Buttons - side by side on desktop, stacked on mobile */}
+                    {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3">
-                        {/* Before/After Toggle */}
+                        {/* Toggle */}
                         <button
-                            onClick={toggleBeforeAfter}
-                            className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-muted rounded-lg hover:bg-muted-foreground/10 transition-colors sm:flex-1"
+                            onClick={handleToggle}
+                            disabled={isLoading}
+                            className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-muted rounded-lg hover:bg-muted-foreground/10 transition-colors sm:flex-1 disabled:opacity-50"
                         >
                             <SwitchCamera className="w-4 h-4" />
-                            {showOriginal ? 'Showing: Original' : 'Showing: Converted'}
+                            {isLoading ? 'Loading...' : (showOriginal ? 'Showing: Original' : 'Showing: Converted')}
                         </button>
 
-                        {/* Download Button */}
+                        {/* Download */}
                         {file.outputBlob && (
                             <Button
                                 onClick={handleDownload}
