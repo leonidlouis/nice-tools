@@ -117,7 +117,7 @@ export function VideoDropZone({ onFilesAdded, disabled }: VideoDropZoneProps) {
                 </div>
 
                 <p id="video-upload-instructions" className="text-xs text-muted-foreground">
-                    Supports MP4, WebM, MOV, AVI, MKV • Processed 100% in your browser
+                    Supports MP4, WebM, MOV, AVI, MKV
                 </p>
             </div>
         </div>
