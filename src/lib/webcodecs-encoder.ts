@@ -14,13 +14,6 @@ import {
   QUALITY_LOW,
 } from 'mediabunny';
 
-// Map our quality settings to mediabunny quality constants
-const MEDIABUNNY_QUALITY = {
-  high: QUALITY_HIGH,
-  medium: QUALITY_MEDIUM,
-  low: QUALITY_LOW,
-};
-
 // Map our resolution settings to dimensions
 const RESOLUTION_DIMENSIONS: Record<string, { width: number; height: number } | null> = {
   original: null,
@@ -29,6 +22,90 @@ const RESOLUTION_DIMENSIONS: Record<string, { width: number; height: number } | 
   '720p': { width: 1280, height: 720 },
   '480p': { width: 854, height: 480 },
 };
+
+/**
+ * Smooth progress tracker that interpolates between real progress updates
+ * to provide smooth UI updates during encoding.
+ */
+class SmoothProgressTracker {
+  private startTime: number;
+  private lastRealProgress: number = 0;
+  private lastRealProgressTime: number = 0;
+  private estimatedTotalTime: number | null = null;
+  private interpolationId: ReturnType<typeof setInterval> | null = null;
+  private onProgress: (progress: number) => void;
+  private isComplete: boolean = false;
+
+  constructor(onProgress: (progress: number) => void) {
+    this.startTime = Date.now();
+    this.lastRealProgressTime = this.startTime;
+    this.onProgress = onProgress;
+    this.startInterpolation();
+  }
+
+  private startInterpolation() {
+    // Update progress every 100ms based on time estimation
+    this.interpolationId = setInterval(() => {
+      if (this.isComplete || this.lastRealProgress >= 100) {
+        return;
+      }
+
+      // If we have an estimated total time, interpolate progress
+      if (this.estimatedTotalTime && this.estimatedTotalTime > 0) {
+        const elapsed = Date.now() - this.startTime;
+        const timeBasedProgress = (elapsed / this.estimatedTotalTime) * 100;
+        
+        // Use the higher of real progress or time-based estimate, but cap at 99%
+        const displayProgress = Math.min(
+          Math.max(this.lastRealProgress, timeBasedProgress),
+          99
+        );
+        
+        // Only report if changed
+        if (Math.round(displayProgress) !== Math.round(this.lastRealProgress)) {
+          this.onProgress(Math.round(displayProgress));
+        }
+      } else {
+        // No estimate yet, slowly increment to show activity (max 5% ahead of last real progress)
+        const timeSinceLastUpdate = Date.now() - this.lastRealProgressTime;
+        if (timeSinceLastUpdate > 500) {
+          const incrementalProgress = this.lastRealProgress + Math.min(timeSinceLastUpdate / 1000, 5);
+          if (incrementalProgress < 99) {
+            this.onProgress(Math.round(incrementalProgress));
+          }
+        }
+      }
+    }, 200); // Update every 200ms
+  }
+
+  reportRealProgress(progress: number) {
+    // Ensure progress only moves forward
+    progress = Math.max(progress, this.lastRealProgress);
+    this.lastRealProgress = progress;
+    this.lastRealProgressTime = Date.now();
+    
+    // Update time estimation based on actual progress
+    if (progress > 5 && progress < 100) {
+      const elapsed = Date.now() - this.startTime;
+      this.estimatedTotalTime = elapsed / (progress / 100);
+    }
+    
+    this.onProgress(Math.round(progress));
+  }
+
+  stop() {
+    if (this.interpolationId) {
+      clearInterval(this.interpolationId);
+      this.interpolationId = null;
+    }
+  }
+
+  complete() {
+    this.isComplete = true;
+    this.stop();
+    this.onProgress(100);
+  }
+}
 
 /**
  * Converts a video file using WebCodecs API with mediabunny.
@@ -40,7 +117,13 @@ export async function convertWithWebCodecs(
   codec: VideoCodec = 'vp9',
   onProgress?: (progress: number) => void
 ): Promise<Blob> {
-  console.log('[WebCodecs] Starting conversion with mediabunny, codec:', codec);
+  console.log('[WebCodecs] Starting conversion with mediabunny');
+  console.log('[WebCodecs] Settings received:', {
+    resolution: settings.resolution,
+    fps: settings.fps,
+    outputFormat: settings.outputFormat,
+    quality: settings.quality,
+  });
 
   try {
     // Create input from file
@@ -58,8 +141,11 @@ export async function convertWithWebCodecs(
     // Determine output resolution
     const resolution = RESOLUTION_DIMENSIONS[settings.resolution];
     
-    // Determine quality
-    const quality = MEDIABUNNY_QUALITY[settings.quality] ?? QUALITY_MEDIUM;
+    // Use medium quality as default
+    const quality = QUALITY_MEDIUM;
+    
+    // Log the actual quality values for debugging
+    console.log('[WebCodecs] Using quality:', quality);
     
     // Map codec preference
     const codecPreference = codec === 'vp9' ? 'vp9' : 'vp8';
@@ -76,6 +162,8 @@ export async function convertWithWebCodecs(
     const videoOptions: Record<string, unknown> = {
       codec: codecPreference,
       bitrate: quality,
+      // CRITICAL: Always force transcode to ensure bitrate/quality settings are applied
+      forceTranscode: true,
     };
 
     if (resolution) {
@@ -87,6 +175,15 @@ export async function convertWithWebCodecs(
     if (frameRate) {
       videoOptions.frameRate = frameRate;
     }
+
+    console.log('[WebCodecs] Video options:', {
+      codec: videoOptions.codec,
+      bitrate: videoOptions.bitrate,
+      width: videoOptions.width,
+      height: videoOptions.height,
+      frameRate: videoOptions.frameRate,
+      forceTranscode: videoOptions.forceTranscode,
+    });
 
     // Create conversion with options
     const conversion = await Conversion.init({
@@ -101,11 +198,17 @@ export async function convertWithWebCodecs(
         conversion.discardedTracks.map(t => t.reason).join(', '));
     }
 
-    // Set up progress tracking
-    if (onProgress && conversion.onProgress !== undefined) {
+    // Set up smooth progress tracking
+    let progressTracker: SmoothProgressTracker | null = null;
+    
+    if (onProgress) {
+      progressTracker = new SmoothProgressTracker(onProgress);
+      
+      // Hook into mediabunny's progress callback - MUST assign this to receive updates
+      // The property starts as undefined but must be set to receive progress callbacks
       const originalOnProgress = conversion.onProgress;
       conversion.onProgress = (progress: number) => {
-        onProgress(Math.round(progress * 100));
+        progressTracker?.reportRealProgress(progress * 100);
         if (originalOnProgress) {
           originalOnProgress(progress);
         }
@@ -113,7 +216,13 @@ export async function convertWithWebCodecs(
     }
 
     // Execute conversion
-    await conversion.execute();
+    try {
+      await conversion.execute();
+      progressTracker?.complete();
+    } catch (error) {
+      progressTracker?.stop();
+      throw error;
+    }
 
     // Get output buffer and create blob
     const buffer = output.target.buffer;
