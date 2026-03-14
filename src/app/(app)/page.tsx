@@ -12,7 +12,7 @@ export default function HomePage() {
         },
         {
             title: "Video Converter",
-            description: "Convert videos to GIF, WebP, GIFV, or WebM formats.",
+            description: "Convert videos to WebM, WebP, GIFV, or GIF formats.",
             href: "/video-converter",
             icon: Video,
         },
