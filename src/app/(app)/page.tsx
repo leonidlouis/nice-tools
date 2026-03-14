@@ -6,15 +6,13 @@ export default function HomePage() {
     const tools = [
         {
             title: "Image Compressor",
-            description:
-                "Compress images in your browser. No uploads, no limits, private. Supports WebP, JPEG, PNG, and HEIC.",
+            description: "Compress images in your browser.",
             href: "/image-compressor",
             icon: ImageDown,
         },
         {
             title: "Video Converter",
-            description:
-                "Convert videos to GIF, WebP, GIFV, or WebM formats. All processing happens in your browser — no uploads, completely private.",
+            description: "Convert videos to GIF, WebP, GIFV, or WebM formats.",
             href: "/video-converter",
             icon: Video,
         },
