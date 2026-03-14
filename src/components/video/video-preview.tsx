@@ -173,6 +173,9 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
 
     const currentVideoUrl = showOriginal ? originalVideoUrl : outputVideoUrl;
 
+    // Check if output is an image format (GIF or WebP)
+    const isImageFormat = !showOriginal && (file.name.endsWith('.gif') || file.name.endsWith('.webp'));
+
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden">
@@ -187,20 +190,30 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
                 </DialogHeader>
 
                 <div className="p-4 space-y-4">
-                    {/* Video Player */}
+                    {/* Video/Image Player */}
                     <div className="relative bg-black rounded-lg overflow-hidden">
                         {currentVideoUrl ? (
-                            <video
-                                ref={videoRef}
-                                src={currentVideoUrl}
-                                className="w-full h-auto max-h-[70vh]"
-                                onTimeUpdate={handleTimeUpdate}
-                                onLoadedMetadata={handleLoadedMetadata}
-                                onPlay={() => setIsPlaying(true)}
-                                onPause={() => setIsPlaying(false)}
-                                muted={isMuted}
-                                playsInline
-                            />
+                            isImageFormat ? (
+                                <div className="flex items-center justify-center min-h-[200px]">
+                                    <img
+                                        src={currentVideoUrl}
+                                        alt={file.name}
+                                        className="max-w-full max-h-[70vh] object-contain"
+                                    />
+                                </div>
+                            ) : (
+                                <video
+                                    ref={videoRef}
+                                    src={currentVideoUrl}
+                                    className="w-full h-auto max-h-[70vh]"
+                                    onTimeUpdate={handleTimeUpdate}
+                                    onLoadedMetadata={handleLoadedMetadata}
+                                    onPlay={() => setIsPlaying(true)}
+                                    onPause={() => setIsPlaying(false)}
+                                    muted={isMuted}
+                                    playsInline
+                                />
+                            )
                         ) : (
                             <div className="w-full aspect-video flex items-center justify-center text-white/50">
                                 Loading preview...
@@ -328,7 +341,10 @@ export function VideoPreview({ file, isOpen, onClose }: VideoPreviewProps) {
                                 className="w-full sm:w-auto sm:flex-1 gap-2"
                             >
                                 <Download className="w-4 h-4" />
-                                Download video
+                                {file.name.endsWith('.gif') ? 'Download GIF' :
+                                 file.name.endsWith('.webp') ? 'Download WebP' :
+                                 file.name.endsWith('.gifv') ? 'Download GIFV' :
+                                 'Download WebM'}
                             </Button>
                         )}
                     </div>
