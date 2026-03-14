@@ -50,7 +50,8 @@ async function buildWorker(worker) {
         },
 
         // Don't externalize anything - we want a complete bundle
-        external: [],
+        // Except wasm-webp which has Node.js dependencies
+        external: ['wasm-webp'],
 
         // Log level
         logLevel: 'info',
