@@ -44,7 +44,7 @@ interface VideoSettingsPanelProps {
     disabled?: boolean;
 }
 
-const VIDEO_FORMATS: VideoFormat[] = ['webm', 'gif', 'gifv', 'webp'];
+const VIDEO_FORMATS: VideoFormat[] = ['webm', 'webp', 'gifv', 'gif'];
 
 export function VideoSettingsPanel({ settings, onSettingsChange, onFormatChange, disabled }: VideoSettingsPanelProps) {
     const [showPerformanceInfo, setShowPerformanceInfo] = useState(false);
