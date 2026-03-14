@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ImageDown, ArrowRight, Blocks } from "lucide-react";
+import { ImageDown, Video, ArrowRight, Blocks } from "lucide-react";
 import GradientText from "@/components/ui/gradient-text";
 
 export default function HomePage() {
@@ -11,6 +11,14 @@ export default function HomePage() {
             href: "/image-compressor",
             icon: ImageDown,
             tags: ["fast", "private", "batch"],
+        },
+        {
+            title: "Video Converter",
+            description:
+                "Convert videos to GIF, WebP, GIFV, or WebM formats. All processing happens in your browser — no uploads, completely private.",
+            href: "/video-converter",
+            icon: Video,
+            tags: ["fast", "private", "formats"],
         },
     ];
 
