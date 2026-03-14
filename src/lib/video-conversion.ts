@@ -108,13 +108,14 @@ function getWorker(): Worker {
         return;
       }
 
-      if (message.type === 'progress') {
-        const callback = progressCallbacks.get(message.payload.id);
-        if (callback) {
-          callback(message.payload);
-        }
-        return;
-      }
+  if (message.type === 'progress') {
+    const callback = progressCallbacks.get(message.payload.id);
+    if (callback) {
+      callback(message.payload);
+    }
+    // Silently ignore if no callback (job was cancelled)
+    return;
+  }
 
       if (message.type === 'result') {
         const resolver = pendingResolvers.get(message.payload.id);
@@ -298,6 +299,20 @@ export function cancelConversion(id: string): void {
     payload: { id },
   };
   worker.postMessage(message);
+
+  // Set a timeout to clean up if worker doesn't respond with result
+  // This prevents memory leaks from orphaned callbacks
+  setTimeout(() => {
+    if (pendingResolvers.has(id)) {
+      console.warn('[VideoConversion] Cancel timeout for:', id);
+      const resolver = pendingResolvers.get(id);
+      if (resolver) {
+        resolver({ id, status: 'cancelled' });
+      }
+      pendingResolvers.delete(id);
+      progressCallbacks.delete(id);
+    }
+  }, 5000); // 5 second timeout
 }
 
 /**
@@ -307,6 +322,8 @@ function getOutputMimeType(format: string): string {
   const mimeTypes: Record<string, string> = {
     webm: 'video/webm',
     gif: 'image/gif',
+    gifv: 'video/webm', // GIFV is actually WebM
+    webp: 'image/webp',
   };
   return mimeTypes[format] || 'video/webm';
 }
@@ -423,7 +440,36 @@ export function getDefaultVideoSettings(): VideoConversionSettings {
     preset: 'medium',
     fps: 'original',
     multiThreaded: false,
+    gifOptimization: 'balanced',
   };
+}
+
+/**
+ * Detects if browser is Safari (desktop or iOS).
+ * Used to warn about WebM/GIFV compatibility.
+ */
+export function isSafari(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  
+  const ua = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isSafariBrowser = /safari/.test(ua) && !/chrome/.test(ua) && !/chromium/.test(ua);
+  
+  return isSafariBrowser || isIOS;
+}
+
+/**
+ * Detects if browser is iOS Safari specifically.
+ * iOS Safari doesn't support WebM/GIFV playback.
+ */
+export function isIOSSafari(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  
+  const ua = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isSafari = /safari/.test(ua) && !/crios/.test(ua) && !/fxios/.test(ua);
+  
+  return isIOS && isSafari;
 }
 
 /**
@@ -609,13 +655,13 @@ export function canUseWebCodecs(
     return false;
   }
 
-  // GIF requires ffmpeg.wasm
-  if (settings.outputFormat === 'gif') {
+  // GIF and WebP require ffmpeg.wasm (WebCodecs only supports video codecs)
+  if (settings.outputFormat === 'gif' || settings.outputFormat === 'webp') {
     return false;
   }
 
-  // WebM (VP8/VP9) - WebCodecs can handle this if VP8 or VP9 is supported
-  if (settings.outputFormat === 'webm') {
+  // WebM and GIFV - WebCodecs can handle these (GIFV is just renamed WebM)
+  if (settings.outputFormat === 'webm' || settings.outputFormat === 'gifv') {
     return capabilities.webCodecsVP9Supported || capabilities.webCodecsVP8Supported;
   }
 
