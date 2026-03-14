@@ -49,6 +49,11 @@ async function buildWorker(worker) {
             'process.env.NODE_ENV': isWatch ? '"development"' : '"production"',
         },
 
+        // Resolve @/ alias to src/ for TypeScript path mapping
+        alias: {
+            '@': resolve(projectRoot, 'src'),
+        },
+
         // Don't externalize anything - we want a complete bundle
         // Except wasm-webp which has Node.js dependencies
         external: ['wasm-webp'],
