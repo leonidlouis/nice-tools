@@ -42,7 +42,8 @@ export default function VideoConverterPage() {
         lastRunSettings.resolution !== settings.resolution ||
         lastRunSettings.preset !== settings.preset ||
         lastRunSettings.fps !== settings.fps ||
-        lastRunSettings.multiThreaded !== settings.multiThreaded
+        lastRunSettings.multiThreaded !== settings.multiThreaded ||
+        lastRunSettings.gifOptimization !== settings.gifOptimization
     );
 
     // Cleanup worker on unmount
@@ -120,6 +121,7 @@ export default function VideoConverterPage() {
         });
         setFiles([]);
         setLastRunSettings(null);
+        setIsProcessing(false);
     }, [files]);
 
     // Cancel a processing file
@@ -133,9 +135,9 @@ export default function VideoConverterPage() {
 
     // Start conversion
     const handleStartConversion = useCallback(async () => {
-        let filesToProcess = files.filter(f => f.status === 'pending');
+        let filesToProcess = files.filter(f => f.status === 'pending' || f.status === 'cancelled');
 
-        // If no pending but we have done files with setting changes, re-process all
+        // If no pending/cancelled but we have done files with setting changes, re-process all
         if (filesToProcess.length === 0 && files.length > 0 && hasUnsavedChanges) {
             filesToProcess = files.map(f => ({
                 ...f,
@@ -201,24 +203,38 @@ export default function VideoConverterPage() {
         }
     }, []);
 
-    // Retry a failed file
+    // Retry a failed or cancelled file
     const handleRetryFile = useCallback(async (file: VideoFile) => {
-        if (file.status !== 'error') return;
+        if (!['error', 'cancelled'].includes(file.status)) return;
 
-        const resetFile: VideoFile = { 
-            ...file, 
-            status: 'pending', 
-            error: undefined, 
+        const resetFile: VideoFile = {
+            ...file,
+            status: 'pending',
+            error: undefined,
             progress: 0,
             name: file.file.name, // Reset name to original
         };
         updateFile(resetFile);
 
         setIsProcessing(true);
+
+        // Immediately set to processing so progress bar shows
+        const processingFile: VideoFile = {
+            ...resetFile,
+            status: 'processing',
+            phase: 'reading',
+        };
+        updateFile(processingFile);
+
         try {
             const { convertVideoFile } = await import('@/lib/video-conversion');
-            const result = await convertVideoFile(resetFile, settings, (progress) => {
-                updateFile({ ...resetFile, progress: progress.progress, estimatedTimeRemaining: progress.estimatedTimeRemaining });
+            const result = await convertVideoFile(processingFile, settings, (progress) => {
+                updateFile({
+                    ...processingFile,
+                    progress: progress.progress,
+                    phase: progress.phase,
+                    estimatedTimeRemaining: progress.estimatedTimeRemaining
+                });
             });
             updateFile(result);
         } finally {
@@ -265,16 +281,17 @@ export default function VideoConverterPage() {
     const pendingCount = files.filter(f => f.status === 'pending').length;
     const processingCount = files.filter(f => f.status === 'processing').length;
     const completedCount = files.filter(f => f.status === 'done').length;
+    const cancelledCount = files.filter(f => f.status === 'cancelled').length;
     const showReconvert = files.length > 0 && pendingCount === 0 && processingCount === 0 && completedCount > 0 && hasUnsavedChanges;
 
     return (
         <div className="flex flex-col flex-1">
-            <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-6 flex-1 w-full">
+            <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-6 flex-1 w-full pb-28 lg:pb-6">
                 {/* Tool Header */}
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <h1 className="text-xl font-bold tracking-tight">Video Converter</h1>
-                        <p className="text-xs text-muted-foreground">Convert to WebM or GIF — 100% in your browser</p>
+                        <p className="text-xs text-muted-foreground">Convert to WebM, WebP (Animated), GIFV, GIF — 100% in your browser</p>
                     </div>
                     {completedCount > 0 && !isProcessing && (
                         <Button
@@ -312,6 +329,12 @@ export default function VideoConverterPage() {
                     </div>
                 )}
 
+                {/* Drop Zone */}
+                <VideoDropZone
+                    onFilesAdded={handleFilesAdded}
+                    disabled={isProcessing}
+                />
+
                 {/* Beta Warning & Disclaimer - shown when no files uploaded */}
                 {files.length === 0 && (
                     <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
@@ -333,12 +356,6 @@ export default function VideoConverterPage() {
                     </div>
                 )}
 
-                {/* Drop Zone */}
-                <VideoDropZone
-                    onFilesAdded={handleFilesAdded}
-                    disabled={isProcessing}
-                />
-
                 {/* If we have files, show settings and file list */}
                 {files.length > 0 && (
                     <div className="grid gap-6 lg:grid-cols-[380px_1fr] lg:pb-0">
@@ -347,6 +364,20 @@ export default function VideoConverterPage() {
                             <VideoSettingsPanel
                                 settings={settings}
                                 onSettingsChange={setSettings}
+                                onFormatChange={(format) => {
+                                    // Reset all files to pending when format changes
+                                    if (files.length > 0) {
+                                        setFiles(prev => prev.map(f => ({
+                                            ...f,
+                                            status: 'pending' as const,
+                                            error: undefined,
+                                            outputBlob: undefined,
+                                            outputSize: undefined,
+                                            progress: 0,
+                                        })));
+                                        setLastRunSettings(null);
+                                    }
+                                }}
                                 disabled={isProcessing}
                             />
 
@@ -354,7 +385,7 @@ export default function VideoConverterPage() {
                             <Button
                                 size="lg"
                                 onClick={handleStartConversion}
-                                disabled={(!pendingCount && !showReconvert) || isProcessing}
+                                disabled={(!pendingCount && !showReconvert && !cancelledCount) || isProcessing}
                                 className="w-full gap-2 hidden lg:flex shadow-lg shadow-primary/10"
                             >
                                 {isProcessing ? (
@@ -372,7 +403,9 @@ export default function VideoConverterPage() {
                                         ? 'Re-convert'
                                         : pendingCount > 0
                                             ? `Convert ${pendingCount} file${pendingCount > 1 ? 's' : ''}`
-                                            : 'Finished'}
+                                            : cancelledCount > 0
+                                                ? `Retry ${cancelledCount} Cancelled`
+                                                : 'Finished'}
                             </Button>
                         </div>
 
@@ -395,7 +428,7 @@ export default function VideoConverterPage() {
                                 <Button
                                     size="lg"
                                     onClick={handleStartConversion}
-                                    disabled={(!pendingCount && !showReconvert) || isProcessing}
+                                    disabled={(!pendingCount && !showReconvert && !cancelledCount) || isProcessing}
                                     className="w-full gap-2 shadow-xl shadow-primary/20"
                                 >
                                     {isProcessing ? (
@@ -413,7 +446,9 @@ export default function VideoConverterPage() {
                                             ? 'Re-convert'
                                             : pendingCount > 0
                                                 ? `Convert ${pendingCount} file${pendingCount > 1 ? 's' : ''}`
-                                                : 'Finished'}
+                                                : cancelledCount > 0
+                                                    ? `Retry ${cancelledCount} Cancelled`
+                                                    : 'Finished'}
                                 </Button>
                             </div>
                         </div>

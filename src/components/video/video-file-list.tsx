@@ -82,6 +82,28 @@ export function VideoFileList({
         };
     }, [files]);
 
+    // Calculate queue positions for pending/processing files
+    const queuePositions = useMemo(() => {
+        const positions: Record<string, { position: number; total: number }> = {};
+        let queueCounter = 0;
+        
+        files.forEach(file => {
+            if (file.status === 'pending' || file.status === 'processing') {
+                queueCounter++;
+            }
+        });
+        
+        let currentPosition = 0;
+        files.forEach(file => {
+            if (file.status === 'pending' || file.status === 'processing') {
+                currentPosition++;
+                positions[file.id] = { position: currentPosition, total: queueCounter };
+            }
+        });
+        
+        return positions;
+    }, [files]);
+
     // Confirm before clearing all files
     const handleClearAll = useCallback(() => {
         if (files.length > 0 && window.confirm('Remove all files? This cannot be undone.')) {
@@ -175,17 +197,22 @@ export function VideoFileList({
                 <CardContent className="pt-0">
                     <div className="relative group/list">
                         <div className="max-h-[400px] overflow-y-auto space-y-2 pr-1 custom-scrollbar overscroll-contain">
-                            {files.map((file) => (
-                                <VideoFileItem
-                                    key={file.id}
-                                    file={file}
-                                    onRemove={onRemoveFile}
-                                    onRetry={onRetryFile}
-                                    onPreview={onPreview}
-                                    onCancel={onCancelFile}
-                                    isProcessing={isProcessing}
-                                />
-                            ))}
+                            {files.map((file) => {
+                                const queueInfo = queuePositions[file.id];
+                                return (
+                                    <VideoFileItem
+                                        key={file.id}
+                                        file={file}
+                                        onRemove={onRemoveFile}
+                                        onRetry={onRetryFile}
+                                        onPreview={onPreview}
+                                        onCancel={onCancelFile}
+                                        isProcessing={isProcessing}
+                                        queuePosition={queueInfo?.position}
+                                        totalQueue={queueInfo?.total}
+                                    />
+                                );
+                            })}
                         </div>
                         {/* Scroll hint gradient */}
                         <div className="absolute bottom-0 left-0 right-1 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none opacity-0 group-hover/list:opacity-100 transition-opacity" />
@@ -303,6 +330,8 @@ interface VideoFileItemProps {
     onPreview?: (file: VideoFile) => void;
     onCancel?: (id: string) => void;
     isProcessing?: boolean;
+    queuePosition?: number;
+    totalQueue?: number;
 }
 
 // Hook to track if this is the first progress update for a processing file
@@ -352,7 +381,9 @@ const VideoFileItem = React.memo(function VideoFileItem({
     onRetry,
     onPreview,
     onCancel,
-    isProcessing
+    isProcessing,
+    queuePosition,
+    totalQueue
 }: VideoFileItemProps) {
     const hasReceivedProgress = useFirstProgressUpdate(file);
 
@@ -416,10 +447,21 @@ const VideoFileItem = React.memo(function VideoFileItem({
                         <div className="flex justify-between text-xs">
                             <span className="text-primary font-medium">
                                 {file.phase ? PHASE_DISPLAY_NAMES[file.phase] : 'Processing...'}
+                                {queuePosition && totalQueue && totalQueue > 1 && (
+                                    <span className="ml-2 text-muted-foreground">
+                                        ({queuePosition}/{totalQueue})
+                                    </span>
+                                )}
                             </span>
                             <span className="text-muted-foreground">{file.progress}%</span>
                         </div>
                         <Progress value={file.progress} className="h-1.5" disableTransition={!hasReceivedProgress} />
+                    </div>
+                )}
+                {/* Queue position for pending files */}
+                {file.status === 'pending' && queuePosition && totalQueue && totalQueue > 1 && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                        Waiting... ({queuePosition}/{totalQueue})
                     </div>
                 )}
             </div>
@@ -498,8 +540,8 @@ const VideoFileItem = React.memo(function VideoFileItem({
                     </Button>
                 )}
 
-                {/* Retry button for failed files - disabled when any conversion is in progress */}
-                {file.status === 'error' && onRetry && (
+                {/* Retry button for failed or cancelled files - disabled when any conversion is in progress */}
+                {(['error', 'cancelled'].includes(file.status)) && onRetry && (
                     <Button
                         variant="ghost"
                         size="icon"
