@@ -10,7 +10,6 @@ export default function HomePage() {
                 "Compress images in your browser. No uploads, no limits, private. Supports WebP, JPEG, PNG, and HEIC.",
             href: "/image-compressor",
             icon: ImageDown,
-            tags: ["fast", "private", "batch"],
         },
         {
             title: "Video Converter",
@@ -18,7 +17,6 @@ export default function HomePage() {
                 "Convert videos to GIF, WebP, GIFV, or WebM formats. All processing happens in your browser — no uploads, completely private.",
             href: "/video-converter",
             icon: Video,
-            tags: ["fast", "private", "formats"],
         },
     ];
 
@@ -65,16 +63,6 @@ export default function HomePage() {
                         <p className="text-sm text-muted-foreground leading-relaxed">
                             {tool.description}
                         </p>
-                        <div className="flex gap-1.5 flex-wrap mt-auto">
-                            {tool.tags.map((tag) => (
-                                <span
-                                    key={tag}
-                                    className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
-                                >
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
                     </Link>
                 ))}
 
