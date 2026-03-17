@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const LOWER_CHARS = "abcdefghijklmnopqrstuvwxyz";
 const UPPER_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -120,120 +121,128 @@ export default function PasswordGeneratorPage() {
                 </p>
             </div>
 
-            <div className="max-w-2xl space-y-6 bg-card border border-border/60 rounded-xl p-6 shadow-sm">
-                <div className="relative group">
-                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border/40 min-h-[5rem] overflow-x-auto">
-                        <span className="text-2xl font-mono tracking-wider text-foreground break-all pr-12">
-                            {password}
-                        </span>
+            <Card className="max-w-2xl border-border/60 shadow-sm">
+                <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                        <KeyRound className="w-4 h-4" />
+                        Generation Settings
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="relative group">
+                        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border/40 min-h-[5rem] overflow-x-auto">
+                            <span className="text-2xl font-mono tracking-wider text-foreground break-all pr-12">
+                                {password}
+                            </span>
+                        </div>
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 bg-muted/80 backdrop-blur-sm p-1 rounded-md shadow-sm">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={generatePassword}
+                                title="Regenerate Password"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            >
+                                <RefreshCw className="size-4" />
+                            </Button>
+                            <Button
+                                variant="default"
+                                size="icon"
+                                onClick={handleCopy}
+                                title="Copy to Clipboard"
+                                className="h-8 w-8 transition-all"
+                            >
+                                {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                            </Button>
+                        </div>
                     </div>
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 bg-muted/80 backdrop-blur-sm p-1 rounded-md shadow-sm">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={generatePassword}
-                            title="Regenerate Password"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        >
-                            <RefreshCw className="size-4" />
-                        </Button>
-                        <Button
-                            variant="default"
-                            size="icon"
-                            onClick={handleCopy}
-                            title="Copy to Clipboard"
-                            className="h-8 w-8 transition-all"
-                        >
-                            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                        </Button>
-                    </div>
-                </div>
 
-                <div className="space-y-2">
-                    <div className="flex justify-between items-center text-sm">
-                        <span className="font-medium text-muted-foreground">Password Strength</span>
-                        <span className="font-medium">{strength.label}</span>
-                    </div>
-                    <Progress value={strength.score} className="h-2" indicatorClassName={strength.color} />
-                </div>
-
-                <div className="space-y-6 pt-4 border-t border-border/40">
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                            <label className="text-sm font-medium">Password Length</label>
-                            <span className="text-sm font-mono text-muted-foreground">{length}</span>
+                            <span className="text-sm font-medium">Password Strength</span>
+                            <span className="text-sm text-muted-foreground">{strength.label}</span>
                         </div>
-                        <Slider
-                            value={[length]}
-                            onValueChange={(val) => setLength(val[0])}
-                            min={6}
-                            max={128}
-                            step={1}
-                            className="w-full"
-                        />
+                        <Progress value={strength.score} className="h-2" indicatorClassName={strength.color} />
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="flex items-center justify-between space-x-2 border border-border/40 rounded-lg p-3">
-                            <label htmlFor="lowercase" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer">
-                                Lowercase (a-z)
-                            </label>
-                            <Switch
-                                id="lowercase"
-                                checked={useLower}
-                                onCheckedChange={handleSwitchChange(setUseLower, useLower)}
+                    <div className="space-y-6 pt-4 border-t border-border/40">
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <label className="text-sm font-medium">Password Length</label>
+                                <span className="text-sm font-mono text-muted-foreground">{length}</span>
+                            </div>
+                            <Slider
+                                value={[length]}
+                                onValueChange={(val) => setLength(val[0])}
+                                min={6}
+                                max={128}
+                                step={1}
+                                className="w-full"
                             />
                         </div>
-                        <div className="flex items-center justify-between space-x-2 border border-border/40 rounded-lg p-3">
-                            <label htmlFor="uppercase" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer">
-                                Uppercase (A-Z)
-                            </label>
-                            <Switch
-                                id="uppercase"
-                                checked={useUpper}
-                                onCheckedChange={handleSwitchChange(setUseUpper, useUpper)}
-                            />
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="flex items-center justify-between space-x-2 border border-border/40 rounded-lg p-3">
+                                <label htmlFor="lowercase" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer">
+                                    Lowercase (a-z)
+                                </label>
+                                <Switch
+                                    id="lowercase"
+                                    checked={useLower}
+                                    onCheckedChange={handleSwitchChange(setUseLower, useLower)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between space-x-2 border border-border/40 rounded-lg p-3">
+                                <label htmlFor="uppercase" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer">
+                                    Uppercase (A-Z)
+                                </label>
+                                <Switch
+                                    id="uppercase"
+                                    checked={useUpper}
+                                    onCheckedChange={handleSwitchChange(setUseUpper, useUpper)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between space-x-2 border border-border/40 rounded-lg p-3">
+                                <label htmlFor="numbers" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer">
+                                    Numbers (0-9)
+                                </label>
+                                <Switch
+                                    id="numbers"
+                                    checked={useNumbers}
+                                    onCheckedChange={handleSwitchChange(setUseNumbers, useNumbers)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between space-x-2 border border-border/40 rounded-lg p-3">
+                                <label htmlFor="symbols" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer">
+                                    Symbols (!@#$)
+                                </label>
+                                <Switch
+                                    id="symbols"
+                                    checked={useSymbols}
+                                    onCheckedChange={handleSwitchChange(setUseSymbols, useSymbols)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between space-x-2 border border-border/40 rounded-lg p-3">
+                                <label htmlFor="excludeSimilar" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer">
+                                    Exclude Similar (i, l, 1, L, o, 0, O)
+                                </label>
+                                <Switch
+                                    id="excludeSimilar"
+                                    checked={excludeSimilar}
+                                    onCheckedChange={setExcludeSimilar}
+                                />
+                            </div>
                         </div>
-                        <div className="flex items-center justify-between space-x-2 border border-border/40 rounded-lg p-3">
-                            <label htmlFor="numbers" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer">
-                                Numbers (0-9)
-                            </label>
-                            <Switch
-                                id="numbers"
-                                checked={useNumbers}
-                                onCheckedChange={handleSwitchChange(setUseNumbers, useNumbers)}
-                            />
-                        </div>
-                        <div className="flex items-center justify-between space-x-2 border border-border/40 rounded-lg p-3">
-                            <label htmlFor="symbols" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer">
-                                Symbols (!@#$)
-                            </label>
-                            <Switch
-                                id="symbols"
-                                checked={useSymbols}
-                                onCheckedChange={handleSwitchChange(setUseSymbols, useSymbols)}
-                            />
-                        </div>
-                        <div className="flex items-center justify-between space-x-2 border border-border/40 rounded-lg p-3">
-                            <label htmlFor="excludeSimilar" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer">
-                                Exclude Similar (i, l, 1, L, o, 0, O)
-                            </label>
-                            <Switch
-                                id="excludeSimilar"
-                                checked={excludeSimilar}
-                                onCheckedChange={setExcludeSimilar}
-                            />
-                        </div>
+                        
+                        {([useLower, useUpper, useNumbers, useSymbols].filter(Boolean).length === 1) && (
+                            <div className="flex items-center gap-2 text-xs text-yellow-600 dark:text-yellow-500 bg-yellow-50 dark:bg-yellow-500/10 p-2 rounded-md">
+                                <AlertCircle className="size-4" />
+                                <span>At least one character type must be selected.</span>
+                            </div>
+                        )}
                     </div>
-                    
-                    {([useLower, useUpper, useNumbers, useSymbols].filter(Boolean).length === 1) && (
-                        <div className="flex items-center gap-2 text-xs text-yellow-600 dark:text-yellow-500 bg-yellow-50 dark:bg-yellow-500/10 p-2 rounded-md">
-                            <AlertCircle className="size-4" />
-                            <span>At least one character type must be selected.</span>
-                        </div>
-                    )}
-                </div>
-            </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }

@@ -6,6 +6,7 @@ import { Fingerprint, Copy, Check, RefreshCw, Settings2, Download } from "lucide
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function UuidGeneratorPage() {
     const [uuids, setUuids] = useState<string[]>([]);
@@ -70,105 +71,103 @@ export default function UuidGeneratorPage() {
                 </p>
             </div>
 
-            <div className="max-w-2xl space-y-6 bg-card border border-border/60 rounded-xl p-6 shadow-sm">
-                
-                {/* Controls */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 space-y-2 border border-border/40 p-4 rounded-lg">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                            <Settings2 className="size-4" />
-                            Settings
-                        </div>
-                        
-                        <div className="grid gap-4 mt-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm">Version</label>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant={version === "v4" ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => setVersion("v4")}
-                                    >
-                                        v4 (Random)
-                                    </Button>
-                                    <Button
-                                        variant={version === "v7" ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => setVersion("v7")}
-                                    >
-                                        v7 (Time-based)
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm">Quantity</label>
-                                <Input
-                                    type="number"
-                                    min={1}
-                                    max={10000}
-                                    value={quantity}
-                                    onChange={(e) => {
-                                        const val = parseInt(e.target.value);
-                                        if (!isNaN(val)) setQuantity(val);
-                                    }}
-                                    className="w-24 text-right"
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm">Include Hyphens</label>
-                                <Switch
-                                    checked={hyphens}
-                                    onCheckedChange={setHyphens}
-                                />
+            <Card className="max-w-2xl border-border/60 shadow-sm">
+                <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                        <Settings2 className="w-4 h-4" />
+                        Generation Settings
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {/* Controls */}
+                    <div className="grid gap-4">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium">Version</label>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant={version === "v4" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setVersion("v4")}
+                                >
+                                    v4 (Random)
+                                </Button>
+                                <Button
+                                    variant={version === "v7" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setVersion("v7")}
+                                >
+                                    v7 (Time-based)
+                                </Button>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Output Area */}
-                <div className="relative group mt-4">
-                    <div className="bg-muted/50 rounded-lg border border-border/40 p-4 h-[200px] overflow-y-auto font-mono text-sm">
-                        {uuids.map((id, index) => (
-                            <div key={index} className="break-all text-foreground">{id}</div>
-                        ))}
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium">Quantity</label>
+                            <Input
+                                type="number"
+                                min={1}
+                                max={10000}
+                                value={quantity}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val)) setQuantity(val);
+                                }}
+                                className="w-24 text-right"
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium">Include Hyphens</label>
+                            <Switch
+                                checked={hyphens}
+                                onCheckedChange={setHyphens}
+                            />
+                        </div>
                     </div>
-                    <div className="absolute top-2 right-2 flex gap-1 bg-muted/80 backdrop-blur-sm p-1 rounded-md shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                         <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={generateUuids}
-                            title="Regenerate"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        >
-                            <RefreshCw className="size-4" />
-                        </Button>
-                        <Button
-                            variant="default"
-                            size="icon"
-                            onClick={handleCopy}
-                            title="Copy All"
-                            className="h-8 w-8 transition-all"
-                        >
-                            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={handleDownload}
-                            title="Download TXT"
-                            className="h-8 w-8 transition-all"
-                        >
-                            <Download className="size-4" />
-                        </Button>
+
+                    {/* Output Area */}
+                    <div className="relative group mt-4">
+                        <div className="bg-muted/50 rounded-lg border border-border/40 p-4 h-[200px] overflow-y-auto font-mono text-sm">
+                            {uuids.map((id, index) => (
+                                <div key={index} className="break-all text-foreground">{id}</div>
+                            ))}
+                        </div>
+                        <div className="absolute top-2 right-2 flex gap-1 bg-muted/80 backdrop-blur-sm p-1 rounded-md shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={generateUuids}
+                                title="Regenerate"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            >
+                                <RefreshCw className="size-4" />
+                            </Button>
+                            <Button
+                                variant="default"
+                                size="icon"
+                                onClick={handleCopy}
+                                title="Copy All"
+                                className="h-8 w-8 transition-all"
+                            >
+                                {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={handleDownload}
+                                title="Download TXT"
+                                className="h-8 w-8 transition-all"
+                            >
+                                <Download className="size-4" />
+                            </Button>
+                        </div>
                     </div>
-                </div>
-                
-                <div className="text-xs text-muted-foreground text-center">
-                    {uuids.length} UUID{uuids.length !== 1 ? 's' : ''} generated
-                </div>
-            </div>
+                    
+                    <div className="text-xs text-muted-foreground text-center">
+                        {uuids.length} UUID{uuids.length !== 1 ? 's' : ''} generated
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
