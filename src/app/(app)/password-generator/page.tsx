@@ -16,18 +16,32 @@ const SIMILAR_CHARS = /[il1Lo0O]/g;
 
 function calculateStrength(password: string): { score: number; label: string; color: string } {
     if (!password) return { score: 0, label: "Too Weak", color: "bg-red-500" };
-    let score = 0;
-    if (password.length > 8) score += 20;
-    if (password.length > 12) score += 20;
-    if (/[A-Z]/.test(password)) score += 15;
-    if (/[a-z]/.test(password)) score += 15;
-    if (/[0-9]/.test(password)) score += 15;
-    if (/[^A-Za-z0-9]/.test(password)) score += 15;
+    
+    // Entropy-based calculation
+    let poolSize = 0;
+    if (/[a-z]/.test(password)) poolSize += 26;
+    if (/[A-Z]/.test(password)) poolSize += 26;
+    if (/[0-9]/.test(password)) poolSize += 10;
+    if (/[^A-Za-z0-9]/.test(password)) poolSize += 32;
 
-    if (score < 40) return { score, label: "Weak", color: "bg-red-500" };
-    if (score < 70) return { score, label: "Fair", color: "bg-yellow-500" };
-    if (score < 90) return { score, label: "Good", color: "bg-blue-500" };
-    return { score: 100, label: "Strong", color: "bg-green-500" };
+    // E = L * log2(R)
+    const entropy = password.length * Math.log2(poolSize || 1);
+    
+    // NIST standards for password entropy:
+    // < 28 bits: Very Weak
+    // 28-35 bits: Weak
+    // 36-59 bits: Fair
+    // 60-127 bits: Good
+    // 128+ bits: Excellent
+    
+    // Normalize to 100 for the progress bar (cap at 128 bits for "Full")
+    const score = Math.min(100, (entropy / 128) * 100);
+
+    if (entropy < 36) return { score, label: "Weak", color: "bg-red-500" };
+    if (entropy < 60) return { score, label: "Fair", color: "bg-yellow-500" };
+    if (entropy < 120) return { score, label: "Good", color: "bg-blue-500" };
+    if (entropy < 128) return { score, label: "Strong", color: "bg-emerald-500" };
+    return { score: 100, label: "Excellent", color: "bg-green-500" };
 }
 
 export default function PasswordGeneratorPage() {
