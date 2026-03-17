@@ -59,18 +59,18 @@ export default function UuidGeneratorPage() {
     };
 
     return (
-        <div className="p-6 max-w-2xl mr-auto space-y-8">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-6 flex-1 w-full">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-2">
-                    <Fingerprint className="size-8" />
+                <h1 className="text-xl font-bold tracking-tight mb-1 flex items-center gap-2">
+                    <Fingerprint className="size-5" />
                     UUID Generator
                 </h1>
-                <p className="text-muted-foreground text-base">
+                <p className="text-xs text-muted-foreground">
                     Generate universally unique identifiers (v4 & v7). Fast, secure, and completely local.
                 </p>
             </div>
 
-            <div className="space-y-6 bg-card border border-border/60 rounded-xl p-6 shadow-sm">
+            <div className="max-w-2xl space-y-6 bg-card border border-border/60 rounded-xl p-6 shadow-sm">
                 
                 {/* Controls */}
                 <div className="flex flex-col sm:flex-row gap-4">

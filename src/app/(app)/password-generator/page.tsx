@@ -95,18 +95,18 @@ export default function PasswordGeneratorPage() {
     };
 
     return (
-        <div className="p-6 max-w-2xl mr-auto space-y-8">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-6 flex-1 w-full">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-2">
-                    <KeyRound className="size-8" />
+                <h1 className="text-xl font-bold tracking-tight mb-1 flex items-center gap-2">
+                    <KeyRound className="size-5" />
                     Password Generator
                 </h1>
-                <p className="text-muted-foreground text-base">
+                <p className="text-xs text-muted-foreground">
                     Generate secure, high-entropy passwords directly in your browser. No data leaves your device.
                 </p>
             </div>
 
-            <div className="space-y-6 bg-card border border-border/60 rounded-xl p-6 shadow-sm">
+            <div className="max-w-2xl space-y-6 bg-card border border-border/60 rounded-xl p-6 shadow-sm">
                 <div className="relative group">
                     <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border/40 min-h-[5rem] overflow-x-auto">
                         <span className="text-2xl font-mono tracking-wider text-foreground break-all pr-12">
