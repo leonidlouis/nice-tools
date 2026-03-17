@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ImageDown, Video, ArrowRight, Blocks } from "lucide-react";
+import { ImageDown, Video, ArrowRight, Blocks, KeyRound, Fingerprint } from "lucide-react";
 import GradientText from "@/components/ui/gradient-text";
 
 export default function HomePage() {
@@ -15,6 +15,18 @@ export default function HomePage() {
             description: "Convert videos to WebM, WebP, GIFV, or GIF formats.",
             href: "/video-converter",
             icon: Video,
+        },
+        {
+            title: "Password Generator",
+            description: "Generate secure, high-entropy passwords.",
+            href: "/password-generator",
+            icon: KeyRound,
+        },
+        {
+            title: "UUID Generator",
+            description: "Generate v4 and v7 UUIDs in bulk.",
+            href: "/uuid-generator",
+            icon: Fingerprint,
         },
     ];
 

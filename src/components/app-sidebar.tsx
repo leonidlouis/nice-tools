@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ImageDown, Video, CoffeeIcon, Heart, ChevronUp } from "lucide-react";
+import { ImageDown, Video, CoffeeIcon, Heart, ChevronUp, KeyRound, Fingerprint } from "lucide-react";
 
 import {
     Collapsible,
@@ -37,6 +37,16 @@ const tools = [
         title: "Video Converter",
         url: "/video-converter",
         icon: Video,
+    },
+    {
+        title: "Password Generator",
+        url: "/password-generator",
+        icon: KeyRound,
+    },
+    {
+        title: "UUID Generator",
+        url: "/uuid-generator",
+        icon: Fingerprint,
     },
 ];
 
