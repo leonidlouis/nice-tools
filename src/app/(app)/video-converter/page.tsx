@@ -7,7 +7,7 @@ import { VideoFileList } from '@/components/video/video-file-list';
 import { VideoPreview } from '@/components/video/video-preview';
 import { Button } from '@/components/ui/button';
 
-import { Play, RefreshCw, Loader2, AlertTriangle, Smartphone, Download } from 'lucide-react';
+import { Play, RefreshCw, Loader2, AlertTriangle, Smartphone, Download, Video } from 'lucide-react';
 import {
     generateId,
     convertVideoFiles,
@@ -290,7 +290,10 @@ export default function VideoConverterPage() {
                 {/* Tool Header */}
                 <div className="flex items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight">Video Converter</h1>
+                        <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                            <Video className="size-5" />
+                            Video Converter
+                        </h1>
                         <p className="text-xs text-muted-foreground">Convert to WebM, WebP (Animated), GIFV, GIF — 100% in your browser</p>
                     </div>
                     {completedCount > 0 && !isProcessing && (

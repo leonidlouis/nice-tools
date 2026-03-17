@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { KeyRound, Copy, Check, RefreshCw, AlertCircle } from "lucide-react";
+import { KeyRound, Copy, Check, RefreshCw, AlertCircle, Settings2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -124,7 +124,7 @@ export default function PasswordGeneratorPage() {
             <Card className="max-w-2xl border-border/60 shadow-sm">
                 <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-                        <KeyRound className="w-4 h-4" />
+                        <Settings2 className="w-4 h-4" />
                         Generation Settings
                     </CardTitle>
                 </CardHeader>
@@ -160,7 +160,7 @@ export default function PasswordGeneratorPage() {
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-sm font-medium">Password Strength</span>
-                            <span className="text-sm text-muted-foreground">{strength.label}</span>
+                            <span className="text-sm text-muted-foreground font-medium">{strength.label}</span>
                         </div>
                         <Progress value={strength.score} className="h-2" indicatorClassName={strength.color} />
                     </div>

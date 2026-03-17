@@ -6,7 +6,7 @@ import { SettingsPanel } from '@/components/settings-panel';
 import { FileList } from '@/components/file-list';
 import { DownloadButton } from '@/components/download-button';
 import { Button } from '@/components/ui/button';
-import { Play, RefreshCw, Loader2 } from 'lucide-react';
+import { Play, RefreshCw, Loader2, ImageDown } from 'lucide-react';
 import {
     generateId,
     compressFiles,
@@ -158,7 +158,10 @@ export default function ImageCompressorPage() {
                 {/* Tool Header */}
                 <div className="flex items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight">Image Compressor</h1>
+                        <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                            <ImageDown className="size-5" />
+                            Image Compressor
+                        </h1>
                         <p className="text-xs text-muted-foreground">Instant batch image compression — 100% in your browser</p>
                     </div>
                     {files.length > 0 && (
