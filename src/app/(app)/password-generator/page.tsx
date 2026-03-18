@@ -263,6 +263,31 @@ export default function PasswordGeneratorPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <div className="max-w-2xl rounded-lg border border-border/40 bg-muted/30 p-4">
+                <div className="flex gap-3">
+                    <AlertCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="text-xs space-y-2">
+                        <p className="font-semibold text-foreground/80">
+                            How is password strength calculated?
+                        </p>
+                        <div className="text-muted-foreground leading-relaxed">
+                            <p>
+                                We use <a href="https://en.wikipedia.org/wiki/Claude_Shannon#Information_theory" target="_blank" rel="noopener noreferrer" className="text-foreground font-medium underline decoration-primary/30 underline-offset-2 hover:decoration-primary transition-colors">Information Entropy</a> (pioneered by Claude Shannon) to measure unpredictability in bits. 
+                                It&apos;s calculated as <code className="bg-muted px-1 rounded text-[10px]">L * log2(R)</code>, where <code className="bg-muted px-1 rounded text-[10px]">L</code> is length and <code className="bg-muted px-1 rounded text-[10px]">R</code> is the character pool size.
+                            </p>
+                            <div className="pt-2">
+                                <p>
+                                    Following <a href="https://pages.nist.gov/800-63-3/sp800-63b.html#memo-secret" target="_blank" rel="noopener noreferrer" className="text-foreground font-medium underline decoration-primary/30 underline-offset-2 hover:decoration-primary transition-colors">NIST standards</a>, we categorize strength: 
+                                    <span className="block mt-1 pl-2 border-l-2 border-primary/20">• &lt; 36 bits: Weak</span>
+                                    <span className="block pl-2 border-l-2 border-primary/20">• 60-120 bits: Good</span>
+                                    <span className="block pl-2 border-l-2 border-primary/20">• 128+ bits: Excellent</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

@@ -31,10 +31,10 @@ export default function HomePage() {
     ];
 
     return (
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-10 w-full">
             {/* Hero */}
-            <div className="mb-10">
-                <h1 className="text-3xl font-bold tracking-tight mb-3">
+            <div className="flex flex-col gap-3">
+                <h1 className="text-3xl font-bold tracking-tight">
                     <span>pleasant to use tools,&nbsp;</span>
                     <a href="https://bylouis.io" target="_blank" rel="noopener noreferrer">
                         <GradientText
@@ -46,7 +46,7 @@ export default function HomePage() {
                         </GradientText>
                     </a>
                 </h1>
-                <p className="text-muted-foreground text-base max-w-xl leading-relaxed">
+                <p className="text-muted-foreground text-base leading-relaxed">
                     A curated set of carefully made, useful tools.<br />
                     Free, private, and everything runs on your device — no uploads, no accounts.<br />
                     I use minimal, 100% anonymous telemetry to keep improving.
@@ -54,7 +54,7 @@ export default function HomePage() {
             </div>
 
             {/* Tools Grid */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {tools.map((tool) => (
                     <Link
                         key={tool.href}
@@ -77,7 +77,7 @@ export default function HomePage() {
                 ))}
 
                 {/* Coming Soon Card */}
-                <div className="relative flex flex-col gap-3 rounded-xl border border-dashed border-border/60 bg-transparent p-5 opacity-60 transition-opacity hover:opacity-100 cursor-default">
+                <div className="group relative flex flex-col gap-3 rounded-xl border border-dashed border-border/60 bg-transparent p-5 opacity-60 transition-opacity hover:opacity-100 cursor-default">
                     <div className="flex items-center gap-3">
                         <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                             <Blocks className="size-5" />
@@ -87,14 +87,8 @@ export default function HomePage() {
                         </h2>
                     </div>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        I&apos;ll add more tools every now and then. Check back later for new additions!<br />
-                        Have an idea? <a href="mailto:louisleonid325@gmail.com" className="underline hover:text-foreground transition-colors">Email me here.</a>
+                        New tools added regularly. Have an idea? <a href="mailto:louisleonid325@gmail.com" className="underline hover:text-foreground transition-colors">Email me.</a>
                     </p>
-                    <div className="flex gap-1.5 flex-wrap mt-auto">
-                        <span className="rounded-full border border-border/40 bg-zinc-100 dark:bg-zinc-800/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                            coming soon
-                        </span>
-                    </div>
                 </div>
             </div>
         </div>
