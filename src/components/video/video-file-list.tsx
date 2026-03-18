@@ -299,7 +299,7 @@ function ErrorDetailsBox({ files }: ErrorDetailsBoxProps) {
                                 >
                                     Click here to report this issue
                                 </a>{' '}
-                                and I'll help you resolve it.
+                                and I&apos;ll help you resolve it.
                             </p>
                         </div>
                     </>
@@ -315,7 +315,7 @@ function ErrorDetailsBox({ files }: ErrorDetailsBoxProps) {
                         >
                             Click here to report this issue
                         </a>{' '}
-                        and I'll help you resolve it.
+                        and I&apos;ll help you resolve it.
                     </p>
                 )}
             </CardContent>

@@ -87,7 +87,7 @@ export default function HomePage() {
                         </h2>
                     </div>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        I'll add more tools every now and then. Check back later for new additions!<br />
+                        I&apos;ll add more tools every now and then. Check back later for new additions!<br />
                         Have an idea? <a href="mailto:louisleonid325@gmail.com" className="underline hover:text-foreground transition-colors">Email me here.</a>
                     </p>
                     <div className="flex gap-1.5 flex-wrap mt-auto">
