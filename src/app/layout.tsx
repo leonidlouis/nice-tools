@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 
   metadataBase: new URL('https://tools.bylouis.io'),
   alternates: {
-    canonical: '/',
+    canonical: './',
   },
 
   openGraph: {
