@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuidv4, v7 as uuidv7 } from "uuid";
 import { Fingerprint, Copy, Check, RefreshCw, Settings2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,18 @@ export default function UuidGeneratorPage() {
         setCopied(false);
     }, [version, quantity, hyphens]);
 
+    // Initial mount generation
     useEffect(() => {
+        generateUuids();
+    }, []); // Run once on mount
+
+    // Regenerate when dependencies change, but only if not the first mount
+    const isFirstMount = useRef(true);
+    useEffect(() => {
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            return;
+        }
         generateUuids();
     }, [generateUuids]);
 
@@ -127,7 +138,7 @@ export default function UuidGeneratorPage() {
 
                     {/* Output Area */}
                     <div className="relative group mt-4">
-                        <div className="bg-muted/50 rounded-lg border border-border/40 p-4 h-[200px] overflow-y-auto font-mono text-sm">
+                        <div className="bg-muted/50 rounded-lg border border-border/40 p-4 pr-28 h-[200px] overflow-y-auto font-mono text-sm">
                             {uuids.map((id, index) => (
                                 <div key={index} className="break-all text-foreground">{id}</div>
                             ))}

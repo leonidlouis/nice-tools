@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { KeyRound, Copy, Check, RefreshCw, AlertCircle, Settings2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -46,7 +46,21 @@ function calculateStrength(password: string): { score: number; label: string; co
 }
 
 export default function PasswordGeneratorPage() {
-    const [password, setPassword] = useState("");
+    const [password, setPassword] = useState(() => {
+        // Initial generation
+        const length = 16;
+        const chars = LOWER_CHARS + UPPER_CHARS + NUMBER_CHARS + SYMBOL_CHARS;
+        const array = new Uint32Array(length);
+        if (typeof window !== 'undefined') {
+            window.crypto.getRandomValues(array);
+            let generated = "";
+            for (let i = 0; i < length; i++) {
+                generated += chars[array[i] % chars.length];
+            }
+            return generated;
+        }
+        return "";
+    });
     const [length, setLength] = useState(16);
     const [useLower, setUseLower] = useState(true);
     const [useUpper, setUseUpper] = useState(true);
@@ -80,7 +94,13 @@ export default function PasswordGeneratorPage() {
         setCopied(false);
     }, [length, useLower, useUpper, useNumbers, useSymbols, excludeSimilar]);
 
+    // Only regenerate if settings change, but not on first mount if we already initialized
+    const isFirstMount = useRef(true);
     useEffect(() => {
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            return;
+        }
         generatePassword();
     }, [generatePassword]);
 
@@ -131,7 +151,7 @@ export default function PasswordGeneratorPage() {
                 <CardContent className="space-y-6">
                     <div className="relative group">
                         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border/40 min-h-[5rem] overflow-x-auto">
-                            <span className="text-2xl font-mono tracking-wider text-foreground break-all pr-12">
+                            <span className="text-2xl font-mono tracking-wider text-foreground break-all pr-24">
                                 {password}
                             </span>
                         </div>
