@@ -31,7 +31,7 @@ export default function HomePage() {
     ];
 
     return (
-        <div className="p-6 max-w-4xl mr-auto">
+        <div className="p-6 max-w-4xl mx-auto">
             {/* Hero */}
             <div className="mb-10">
                 <h1 className="text-3xl font-bold tracking-tight mb-3">
