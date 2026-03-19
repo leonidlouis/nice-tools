@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ImageDown, Video, CoffeeIcon, Heart, ChevronUp, KeyRound, Fingerprint } from "lucide-react";
+import { ImageDown, Video, CoffeeIcon, Heart, ChevronUp, KeyRound, Fingerprint, ShieldCheck, Clock, Zap, Palette, ShieldOff, Ruler } from "lucide-react";
 
 import {
     Collapsible,
@@ -25,28 +25,75 @@ import {
     SidebarMenuSub,
     SidebarMenuSubItem,
     SidebarMenuSubButton,
+    SidebarSeparator,
 } from "@/components/ui/sidebar";
+import React from "react";
 
-const tools = [
+const toolGroups = [
     {
-        title: "Image Compressor",
-        url: "/image-compressor",
-        icon: ImageDown,
+        name: "Media",
+        tools: [
+            {
+                title: "Image Compressor",
+                url: "/image-compressor",
+                icon: ImageDown,
+            },
+            {
+                title: "Video Converter",
+                url: "/video-converter",
+                icon: Video,
+            },
+            /* {
+                title: "SVG Optimizer",
+                url: "/svg-optimizer",
+                icon: Zap,
+            },
+            {
+                title: "EXIF Stripper",
+                url: "/exif-stripper",
+                icon: ShieldOff,
+            },
+            {
+                title: "Color Palette",
+                url: "/color-palette",
+                icon: Palette,
+            }, */
+        ],
     },
     {
-        title: "Video Converter",
-        url: "/video-converter",
-        icon: Video,
+        name: "Misc",
+        tools: [
+            {
+                title: "Password Generator",
+                url: "/password-generator",
+                icon: KeyRound,
+            },
+        ],
     },
     {
-        title: "Password Generator",
-        url: "/password-generator",
-        icon: KeyRound,
-    },
-    {
-        title: "UUID Generator",
-        url: "/uuid-generator",
-        icon: Fingerprint,
+        name: "Devtools",
+        tools: [
+            {
+                title: "Cron Visualizer",
+                url: "/cron-visualizer",
+                icon: Clock,
+            },
+            /* {
+                title: "Unit Converter",
+                url: "/unit-converter",
+                icon: Ruler,
+            },
+            {
+                title: "JWT Debugger",
+                url: "/jwt-debugger",
+                icon: ShieldCheck,
+            }, */
+            {
+                title: "UUID Generator",
+                url: "/uuid-generator",
+                icon: Fingerprint,
+            },
+        ],
     },
 ];
 
@@ -90,27 +137,32 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupLabel>Tools</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {tools.map((tool) => (
-                                <SidebarMenuItem key={tool.title}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={pathname === tool.url}
-                                        tooltip={tool.title}
-                                    >
-                                        <Link href={tool.url}>
-                                            <tool.icon />
-                                            <span>{tool.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+                {toolGroups.map((group, index) => (
+                    <React.Fragment key={group.name}>
+                        <SidebarGroup>
+                            <SidebarGroupLabel>{group.name}</SidebarGroupLabel>
+                            <SidebarGroupContent>
+                                <SidebarMenu>
+                                    {group.tools.map((tool) => (
+                                        <SidebarMenuItem key={tool.title}>
+                                            <SidebarMenuButton
+                                                asChild
+                                                isActive={pathname === tool.url}
+                                                tooltip={tool.title}
+                                            >
+                                                <Link href={tool.url}>
+                                                    <tool.icon />
+                                                    <span>{tool.title}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                        {index < toolGroups.length - 1 && <SidebarSeparator className="mx-2" />}
+                    </React.Fragment>
+                ))}
             </SidebarContent>
 
             <SidebarFooter>
