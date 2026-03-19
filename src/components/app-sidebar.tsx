@@ -160,7 +160,7 @@ export function AppSidebar() {
                                 </SidebarMenu>
                             </SidebarGroupContent>
                         </SidebarGroup>
-                        {index < toolGroups.length - 1 && <SidebarSeparator className="mx-2" />}
+                        {index < toolGroups.length - 1 && <SidebarSeparator />}
                     </React.Fragment>
                 ))}
             </SidebarContent>
