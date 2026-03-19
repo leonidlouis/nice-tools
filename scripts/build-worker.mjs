@@ -30,6 +30,16 @@ const workers = [
         entry: resolve(projectRoot, 'src/workers/video-converter.worker.ts'),
         output: resolve(projectRoot, 'public/workers/video-converter.worker.js'),
     },
+    {
+        name: 'SVG Optimizer',
+        entry: resolve(projectRoot, 'src/workers/svg-optimizer.worker.ts'),
+        output: resolve(projectRoot, 'public/workers/svg-optimizer.worker.js'),
+    },
+    {
+        name: 'EXIF Stripper',
+        entry: resolve(projectRoot, 'src/workers/exif-stripper.worker.ts'),
+        output: resolve(projectRoot, 'public/workers/exif-stripper.worker.js'),
+    },
 ];
 
 async function buildWorker(worker) {

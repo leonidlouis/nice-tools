@@ -7,9 +7,22 @@ import { isValidImageFile, SUPPORTED_EXTENSIONS } from '@/lib/compression';
 interface DropZoneProps {
     onFilesAdded: (files: File[]) => void;
     disabled?: boolean;
+    accept?: string;
+    validator?: (file: File) => boolean;
+    multiple?: boolean;
+    instructionText?: string;
+    descriptionText?: string;
 }
 
-export function DropZone({ onFilesAdded, disabled }: DropZoneProps) {
+export function DropZone({ 
+    onFilesAdded, 
+    disabled, 
+    accept = SUPPORTED_EXTENSIONS.join(','),
+    validator = isValidImageFile,
+    multiple = true,
+    instructionText = "Drag & drop images",
+    descriptionText = "Supports JPEG, PNG, WebP, HEIC • as many images as you want"
+}: DropZoneProps) {
     const [isDragActive, setIsDragActive] = useState(false);
 
     const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -37,16 +50,16 @@ export function DropZone({ onFilesAdded, disabled }: DropZoneProps) {
         if (disabled) return;
 
         const droppedFiles = Array.from(e.dataTransfer.files);
-        const validFiles = droppedFiles.filter(isValidImageFile);
+        const validFiles = droppedFiles.filter(validator);
 
         if (validFiles.length > 0) {
             onFilesAdded(validFiles);
         }
-    }, [onFilesAdded, disabled]);
+    }, [onFilesAdded, disabled, validator]);
 
     const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = e.target.files ? Array.from(e.target.files) : [];
-        const validFiles = selectedFiles.filter(isValidImageFile);
+        const validFiles = selectedFiles.filter(validator);
 
         if (validFiles.length > 0) {
             onFilesAdded(validFiles);
@@ -54,12 +67,12 @@ export function DropZone({ onFilesAdded, disabled }: DropZoneProps) {
 
         // Reset input so same file can be selected again
         e.target.value = '';
-    }, [onFilesAdded]);
+    }, [onFilesAdded, validator]);
 
     return (
         <div
             role="region"
-            aria-label="Image upload area"
+            aria-label="File upload area"
             onDragEnter={handleDragEnter}
             onDragLeave={handleDragLeave}
             onDragOver={handleDragOver}
@@ -76,16 +89,16 @@ export function DropZone({ onFilesAdded, disabled }: DropZoneProps) {
       `}
         >
             <label htmlFor="image-upload-input" className="sr-only">
-                Select images to compress
+                {instructionText}
             </label>
             <input
                 id="image-upload-input"
                 type="file"
-                multiple
-                accept={SUPPORTED_EXTENSIONS.join(',')}
+                multiple={multiple}
+                accept={accept}
                 onChange={handleFileInput}
                 disabled={disabled}
-                aria-label="Select images to compress"
+                aria-label={instructionText}
                 aria-describedby="upload-instructions"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
@@ -108,7 +121,7 @@ export function DropZone({ onFilesAdded, disabled }: DropZoneProps) {
 
                 <div>
                     <h3 className="text-base sm:text-lg font-semibold mb-1">
-                        {isDragActive ? 'Drop images here' : 'Drag & drop images'}
+                        {isDragActive ? 'Drop file here' : instructionText}
                     </h3>
                     <p className="text-sm text-muted-foreground">
                         or tap to browse files
@@ -116,7 +129,7 @@ export function DropZone({ onFilesAdded, disabled }: DropZoneProps) {
                 </div>
 
                 <p id="upload-instructions" className="text-xs text-muted-foreground">
-                    Supports JPEG, PNG, WebP, HEIC • as many images as you want
+                    {descriptionText}
                 </p>
             </div>
         </div>

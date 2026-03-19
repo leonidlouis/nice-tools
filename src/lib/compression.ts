@@ -314,9 +314,10 @@ export const SUPPORTED_TYPES = [
     'image/webp',
     'image/heic',
     'image/heif',
+    'image/svg+xml',
 ];
 
-export const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'];
+export const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.svg'];
 
 // Validate file type
 export function isValidImageFile(file: File): boolean {

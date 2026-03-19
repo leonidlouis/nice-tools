@@ -8,7 +8,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
         '',
         '/image-compressor',
         '/video-converter',
+        '/svg-optimizer',
+        '/cron-visualizer',
         '/password-generator',
+        '/jwt-debugger',
+        '/color-palette',
+        '/exif-stripper',
+        '/unit-converter',
         '/uuid-generator',
     ];
 
