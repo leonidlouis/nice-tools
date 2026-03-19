@@ -154,7 +154,7 @@ export default function ImageCompressorPage() {
 
     return (
         <div className="flex flex-col flex-1">
-            <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-6 flex-1 w-full">
+            <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-6 flex-1 w-full pb-28 lg:pb-6 animate-in fade-in duration-500">
                 {/* Tool Header */}
                 <div className="flex items-center justify-between gap-3">
                     <div>

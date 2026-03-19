@@ -71,7 +71,7 @@ export default function UuidGeneratorPage() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-6 flex-1 w-full">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-6 flex-1 w-full pb-28 lg:pb-6 animate-in fade-in duration-500">
             <div>
                 <h1 className="text-xl font-bold tracking-tight mb-1 flex items-center gap-2">
                     <Fingerprint className="size-5" />
