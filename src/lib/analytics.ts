@@ -12,6 +12,7 @@ type EventName =
     | 'settings_changed'
     | 'help_clicked'
     | 'clear_all_clicked'
+    | 'download_all_clicked'
     | 'support_menu_opened'
     | 'preview_opened'
     | 'preview_toggle_clicked'
@@ -22,7 +23,18 @@ type EventName =
     | 'video_preview_opened'
     | 'video_download_all'
     | 'video_settings_changed'
-    | 'video_error_report_clicked';
+    | 'video_error_report_clicked'
+    | 'exif_stripping_started'
+    | 'exif_batch_completed'
+    | 'exif_error_occurred'
+    | 'svg_file_added'
+    | 'svg_optimization_started'
+    | 'svg_optimization_completed'
+    | 'svg_optimization_failed'
+    | 'jwt_decoded'
+    | 'cron_expression_parsed'
+    | 'color_palette_generated'
+    | 'unit_converted';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EventProperties = { active_user_account?: string | null; } & Record<string, any>;
