@@ -3,12 +3,12 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import cronstrue from "cronstrue";
 import * as cronParser from "cron-parser";
-import { 
-    Clock, 
-    Copy, 
-    Check, 
-    LayoutGrid, 
-    List, 
+import {
+    Clock,
+    Copy,
+    Check,
+    LayoutGrid,
+    List,
     Play,
     Timer,
     CalendarDays,
@@ -46,7 +46,7 @@ const TAB_CONFIG = [
 ];
 
 const MONTH_LABELS: Record<number, string> = {
-    1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun", 
+    1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
     7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"
 };
 
@@ -110,7 +110,7 @@ export default function CronVisualizerPage() {
     const toggleValue = (partIndex: number, value: number) => {
         let part = cronParts[partIndex];
         const valStr = value.toString();
-        
+
         if (part === "*" || part.includes("/") || part.includes("-")) {
             part = valStr;
         } else {
@@ -146,7 +146,7 @@ export default function CronVisualizerPage() {
     const isValueSelected = (partIndex: number, value: number) => {
         const part = cronParts[partIndex];
         if (part === "*") return false;
-        
+
         if (part.startsWith("*/")) {
             const step = parseInt(part.split("/")[1]);
             return value % step === 0;
@@ -156,9 +156,9 @@ export default function CronVisualizerPage() {
         return values.includes(value.toString());
     };
 
-    const currentTabConfig = useMemo(() => 
-        TAB_CONFIG.find(t => t.id === activeTab)!, 
-    [activeTab]);
+    const currentTabConfig = useMemo(() =>
+        TAB_CONFIG.find(t => t.id === activeTab)!,
+        [activeTab]);
 
     return (
         <div className="flex flex-col flex-1">
@@ -175,17 +175,17 @@ export default function CronVisualizerPage() {
                         </p>
                     </div>
                     <div className="hidden sm:flex items-center gap-1 bg-muted p-1 rounded-lg border w-fit">
-                        <Button 
-                            variant={!isUtc ? "secondary" : "ghost"} 
-                            size="sm" 
+                        <Button
+                            variant={!isUtc ? "secondary" : "ghost"}
+                            size="sm"
                             className="h-7 px-3 text-xs font-medium"
                             onClick={() => setIsUtc(false)}
                         >
                             Local
                         </Button>
-                        <Button 
-                            variant={isUtc ? "secondary" : "ghost"} 
-                            size="sm" 
+                        <Button
+                            variant={isUtc ? "secondary" : "ghost"}
+                            size="sm"
                             className="h-7 px-3 text-xs font-medium"
                             onClick={() => setIsUtc(true)}
                         >
@@ -211,10 +211,10 @@ export default function CronVisualizerPage() {
                                 <Badge variant="secondary" className="font-mono text-xs py-1 px-4 border border-primary/10">
                                     {cron}
                                 </Badge>
-                                <Button 
-                                    variant="outline" 
-                                    size="icon" 
-                                    className="size-8 bg-background/50 hover:bg-background" 
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="size-8 bg-background/50 hover:bg-background"
                                     onClick={handleCopy}
                                 >
                                     {copied ? <Check className="size-4 text-green-500" /> : <Copy className="size-4" />}
@@ -231,7 +231,7 @@ export default function CronVisualizerPage() {
                     </CardContent>
                 </Card>
 
-                <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+                <div className="grid  lg:grid-cols-[1fr_320px]">
                     <div className="space-y-6">
                         {/* Visual Token Builder */}
                         <div className="grid grid-cols-5 gap-2">
@@ -241,8 +241,8 @@ export default function CronVisualizerPage() {
                                     onClick={() => setActiveTab(tab.id)}
                                     className={cn(
                                         "flex flex-col items-center justify-center p-3 rounded-xl border transition-all h-16",
-                                        activeTab === tab.id 
-                                            ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                                        activeTab === tab.id
+                                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
                                             : "bg-card border-border hover:border-primary/40 text-muted-foreground hover:bg-muted/30"
                                     )}
                                 >
@@ -261,9 +261,9 @@ export default function CronVisualizerPage() {
                                         <Settings2 className="size-4" />
                                         Configure {currentTabConfig.label}
                                     </CardTitle>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
                                         className="h-8 text-xs text-muted-foreground hover:text-destructive"
                                         onClick={() => updateCronPart(currentTabConfig.index, "*")}
                                     >
@@ -272,7 +272,7 @@ export default function CronVisualizerPage() {
                                     </Button>
                                 </div>
                             </CardHeader>
-                            
+
                             <CardContent className="pt-0">
                                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                                     {TAB_CONFIG.map((tab) => (
@@ -325,8 +325,8 @@ export default function CronVisualizerPage() {
                                                                     )}
                                                                     onClick={() => toggleValue(tab.index, val)}
                                                                 >
-                                                                    {tab.id === 'months' ? MONTH_LABELS[val] : 
-                                                                     tab.id === 'dow' ? DAY_LABELS[val] : val}
+                                                                    {tab.id === 'months' ? MONTH_LABELS[val] :
+                                                                        tab.id === 'dow' ? DAY_LABELS[val] : val}
                                                                 </Button>
                                                             ))}
                                                         </div>
@@ -361,8 +361,8 @@ export default function CronVisualizerPage() {
                                                     </span>
                                                 </div>
                                                 <span className="text-sm font-mono font-bold tracking-tight">
-                                                    {date.toLocaleTimeString(undefined, { 
-                                                        hour: '2-digit', 
+                                                    {date.toLocaleTimeString(undefined, {
+                                                        hour: '2-digit',
                                                         minute: '2-digit',
                                                         hour12: true,
                                                     })}
@@ -397,8 +397,8 @@ export default function CronVisualizerPage() {
                                             size="sm"
                                             className={cn(
                                                 "h-auto py-2 px-3 justify-start text-left transition-all",
-                                                cron === preset.value 
-                                                    ? "border-primary bg-primary/5" 
+                                                cron === preset.value
+                                                    ? "border-primary bg-primary/5"
                                                     : "hover:border-primary/30"
                                             )}
                                             onClick={() => {

@@ -183,7 +183,7 @@ export default function SVGOptimizerPage() {
                         descriptionText="Supports SVG files • 100% local processing"
                     />
                 ) : (
-                    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+                    <div className="grid  lg:grid-cols-[1fr_320px]">
                         <div className="space-y-6">
                             {/* Comparison View */}
                             <Card className="overflow-hidden">

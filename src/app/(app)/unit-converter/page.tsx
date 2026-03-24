@@ -45,7 +45,7 @@ export default function UnitConverterPage() {
                     </div>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid  md:grid-cols-2">
                     {/* Typography */}
                     <Card>
                         <CardHeader className="pb-4">
@@ -58,18 +58,18 @@ export default function UnitConverterPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-bold uppercase text-muted-foreground">Pixels (px)</Label>
-                                    <Input 
-                                        type="number" 
-                                        value={px} 
+                                    <Input
+                                        type="number"
+                                        value={px}
                                         onChange={(e) => setPx(e.target.value)}
                                         className="h-9"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-bold uppercase text-muted-foreground">Base Size</Label>
-                                    <Input 
-                                        type="number" 
-                                        value={baseSize} 
+                                    <Input
+                                        type="number"
+                                        value={baseSize}
                                         onChange={(e) => setBaseSize(e.target.value)}
                                         className="h-9"
                                     />
@@ -98,9 +98,9 @@ export default function UnitConverterPage() {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-bold uppercase text-muted-foreground">Megabytes (MB)</Label>
-                                <Input 
-                                    type="number" 
-                                    value={mb} 
+                                <Input
+                                    type="number"
+                                    value={mb}
                                     onChange={(e) => setMb(e.target.value)}
                                     className="h-9"
                                 />

@@ -21,7 +21,7 @@ export default function ColorPalettePage() {
     const palette = useMemo(() => {
         try {
             if (!chroma.valid(seedColor)) return [];
-            
+
             let colors: chroma.Color[] = [];
             const base = chroma(seedColor);
 
@@ -104,7 +104,7 @@ export default function ColorPalettePage() {
                     </Button>
                 </div>
 
-                <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+                <div className="grid  lg:grid-cols-[320px_1fr]">
                     {/* Controls Sidebar */}
                     <div className="space-y-6">
                         <Card>
@@ -113,12 +113,12 @@ export default function ColorPalettePage() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex gap-2">
-                                    <div 
-                                        className="size-10 rounded-md border shadow-sm shrink-0" 
+                                    <div
+                                        className="size-10 rounded-md border shadow-sm shrink-0"
                                         style={{ backgroundColor: seedColor }}
                                     />
-                                    <Input 
-                                        value={seedColor} 
+                                    <Input
+                                        value={seedColor}
                                         onChange={(e) => setSeedColor(e.target.value)}
                                         className="font-mono uppercase"
                                         placeholder="#000000"
@@ -165,7 +165,7 @@ export default function ColorPalettePage() {
                             <CardContent className="p-0">
                                 <div className="flex flex-col sm:flex-row h-64 sm:h-48 w-full overflow-hidden rounded-t-xl">
                                     {palette.map((color, i) => (
-                                        <div 
+                                        <div
                                             key={i}
                                             className="flex-1 flex flex-col items-center justify-end pb-4 group relative cursor-pointer"
                                             style={{ backgroundColor: color.hex }}
@@ -186,7 +186,7 @@ export default function ColorPalettePage() {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="p-6 grid gap-6">
+                                <div className="p-6 grid ">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {palette.map((color, i) => (
                                             <div key={i} className="space-y-3 p-4 rounded-lg border bg-muted/5">

@@ -198,7 +198,7 @@ export function ImagePreview({ file, isOpen, onClose }: ImagePreviewProps) {
                 <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-border/50 bg-card flex flex-row items-center justify-between gap-3">
 
                     {/* Stats Comparison */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6 text-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm: text-sm">
                         <div className={cn("transition-opacity flex items-center sm:block gap-2 sm:gap-0", showCompressed && isCompressedAvailable ? "opacity-50" : "opacity-100 font-medium")}>
                             <p className="text-muted-foreground text-xs uppercase tracking-widest sm:mb-0.5">Orig<span className="hidden sm:inline">inal</span><span className="sm:hidden">:</span></p>
                             <p className="text-xs sm:text-sm font-medium">{formatBytes(originalSize)}</p>

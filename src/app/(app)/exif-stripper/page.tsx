@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { 
-    ShieldOff, 
-    Trash2, 
-    Download, 
-    Image as ImageIcon, 
-    AlertCircle, 
-    CheckCircle2, 
+import {
+    ShieldOff,
+    Trash2,
+    Download,
+    Image as ImageIcon,
+    AlertCircle,
+    CheckCircle2,
     Loader2,
     Info,
     Search,
@@ -69,9 +69,9 @@ export default function ExifStripperPage() {
             sendEvent('exif_batch_completed', { count: filesToProcess.length });
         } catch (error) {
             console.error('Stripping batch failed', error);
-            sendEvent('exif_error_occurred', { 
-                context: 'batch_stripping', 
-                message: error instanceof Error ? error.message : 'Unknown error' 
+            sendEvent('exif_error_occurred', {
+                context: 'batch_stripping',
+                message: error instanceof Error ? error.message : 'Unknown error'
             });
         } finally {
             setIsProcessing(false);
@@ -152,14 +152,14 @@ export default function ExifStripperPage() {
                 </div>
 
                 {/* DropZone */}
-                <DropZone 
-                    onFilesAdded={handleFilesAdded} 
-                    disabled={isProcessing} 
+                <DropZone
+                    onFilesAdded={handleFilesAdded}
+                    disabled={isProcessing}
                     descriptionText="Supports JPEG, PNG, WebP • 100% local & private"
                 />
 
                 {files.length > 0 && (
-                    <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
+                    <div className="grid  lg:grid-cols-[1fr_350px]">
                         {/* File List */}
                         <div className="space-y-4">
                             <Card>
@@ -242,8 +242,8 @@ export default function ExifStripperPage() {
                                         </div>
                                     </div>
 
-                                    <Button 
-                                        className="w-full gap-2 shadow-lg shadow-primary/10" 
+                                    <Button
+                                        className="w-full gap-2 shadow-lg shadow-primary/10"
                                         size="lg"
                                         disabled={isProcessing || pendingCount === 0}
                                         onClick={handleStartStripping}
