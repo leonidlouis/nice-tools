@@ -44,7 +44,7 @@ export default function HomePage() {
             tools: [
                 {
                     title: "Password Generator",
-                    description: "Generate secure, high-entropy passwords.",
+                    description: "Generate secure, high-entropy passwords, directly in your browser",
                     href: "/password-generator",
                     icon: KeyRound,
                 },
