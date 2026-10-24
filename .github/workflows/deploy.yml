@@ -3,6 +3,9 @@ name: Deploy tools.bylouis.io to VPS
 on:
   push:
     branches: [ main ]
+    # A workflow-only hardening change must not upgrade an older live app.
+    paths-ignore:
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 env:
@@ -84,7 +87,7 @@ jobs:
             docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
               --restart always \
-              -p ${{ env.PORT }}:${{ env.PORT }} \
+              -p 127.0.0.1:${{ env.PORT }}:${{ env.PORT }} \
               $IMAGE_TAG
             
             # 6. Cleanup
